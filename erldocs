@@ -1,0 +1,39 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+
+%% @doc Called automatically by escript
+-spec main(list()) -> ok.
+main(Args) ->
+
+    ok = file:set_cwd(filename:dirname(escript:script_name())),
+    ok = filelib:ensure_dir("ebin/"),
+    code:add_path("ebin"),
+    
+    {ok, _} = compile:file("src/erldocs.erl", [{outdir, "ebin"}, verbose]),
+    
+    try dispatch(create_conf(), Args)
+    catch throw:Error ->
+            log("Error running script:~n  ~p",[Error])
+    end.
+
+%% @doc Parses arguments passed to script and calls
+%% appropriate function.
+-spec dispatch(list(), list()) -> ok.
+dispatch(Conf, ["copystatic"]) ->
+    erldocs:copy_static_files(Conf);
+dispatch(Conf, _) ->
+    Start = erlang:now(),
+    erldocs:build(Conf),
+    Diff = timer:now_diff(erlang:now(), Start),
+    Mins = trunc(Diff * 1.667e-8),
+    log("Woot, finished in ~p Minutes ~p Seconds~n",
+        [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))]).
+
+create_conf() ->
+    {ok, [Config]}  = file:consult("priv/sys.conf"),
+    {erldocs, Conf} = lists:keyfind(erldocs, 1, Config),
+    {ok, Root}      = file:get_cwd(),
+    [{root, Root} | Conf].    
+
+log(Str, Args) ->
+    io:format(Str, Args).
