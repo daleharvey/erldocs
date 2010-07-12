@@ -84,10 +84,15 @@ ensure_docsrc(AppDir) ->
     end.    
 
 gen_docsrc(AppDir) ->
-    [ begin
-          ok = docb_gen:module(File),
-          AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
-      end || File <- filelib:wildcard(AppDir ++ "/src/*.erl") ].
+    
+    Files = [ try ok = docb_gen:module(File),
+                  AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
+              catch
+                  _:_ -> ignore
+              end || File <- filelib:wildcard(AppDir ++ "/src/*.erl") ],
+    
+    [ File || File <- Files, File =/= ignore ].
+               
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
