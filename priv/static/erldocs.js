@@ -1,5 +1,5 @@
 var ErlDocs = (function(index) {
-    
+
     var $search       = $("#search"),
         $results      = $("#results"),
         searchActive  = false,
@@ -7,19 +7,19 @@ var ErlDocs = (function(index) {
         resultsCount  = 0,
         showingFuns   = true;
 
-    
+
     var getDetails = function() {
         return showingFuns
             ? {"text":"Hide Functions", "cBottom": "25%", fTop: "75%"}
             : {"text":"View Functions", "cBottom": "0px", fTop: "100%"};
     };
-    
+
     var setDetails = function(details, fun) {
         $("#viewfuns").text(details.text);
         $("#content").css({"bottom":details.cBottom});
         $("#funwrapper").animate({"top":details.fTop}, "normal", fun);
     };
-    
+
     function scrollIntoView($parent, $child) {
 
         var childTop     = $child.position().top - 26,
@@ -27,7 +27,7 @@ var ErlDocs = (function(index) {
             childHeight  = $child.height(),
             parentHeight = $parent.height(),
             newTop       = null;
-        
+
         if (childTop < 0) {
             newTop = scrollTop + childTop;
         } else if (childTop + childHeight > parentHeight) {
@@ -35,18 +35,18 @@ var ErlDocs = (function(index) {
         }
 
         if (newTop !== null) {
-            if (Math.abs(newTop - scrollTop) > 200) { 
+            if (Math.abs(newTop - scrollTop) > 200) {
                 $parent.animate({"scrollTop": newTop}, 'fast');
             } else {
                 $parent[0].scrollTop = newTop;
             }
         }
     };
-    
+
     function setSelected(x) {
 
         var sel, children = $results.children("li");
-        
+
         if (x >= 0 && x < resultsCount) {
 	        if (selected !== null) {
 	            children.eq(selected).removeClass("selected");
@@ -62,11 +62,11 @@ var ErlDocs = (function(index) {
     function keypress(e) {
 
         var tmp, blockedKeys = [0, 9, 17, 18, 91, 192];
-        
+
 	if (!($.inArray(e.keyCode, blockedKeys) === -1)) {
             return;
 	}
-        
+
         if        (e.keyCode === 40) { setSelected(selected + 1);
         } else if (e.keyCode === 38) { setSelected(selected - 1);
         } else if (e.keyCode === 34) { setSelected(selected + 7);
@@ -80,16 +80,16 @@ var ErlDocs = (function(index) {
 	        filter($search.val());
         }
     };
-    
+
     function windowResize() {
         $results.height($(window).height() - 26);
     };
 
     function showModules() {
-        
+
         var i, item, len  = index.length,
             results = [];
-        
+
         for (i = 0; i < len; i += 1) {
             item = index[i];
             if (item[0] === "mod") {
@@ -98,14 +98,14 @@ var ErlDocs = (function(index) {
         }
         return results;
     };
-    
+
     function searchApps(str) {
-        
+
         var i, count, item,
             len     = index.length,
             results = [],
             terms   = str.split(" ");
-        
+
         for (i = 0, count = 0; i < len; i += 1) {
             item = index[i];
             if (match(item[2], terms)) {
@@ -119,20 +119,20 @@ var ErlDocs = (function(index) {
     };
 
     function formatResults(results, str) {
-        
+
         var i, item, hash, url, html = "",
             len       = results.length,
             searchStr = isSearchStr(str) ? "&search="+str : "";
-        
+
         for (i = 0; i < len; i += 1) {
-            
+
             item = results[i];
-            
+
 	        hash = (item[0] === "fun") ? "#" + item[2].split(":")[1] : "";
-            
+
 	        url = CURRENT_ROOT + item[1] + "/" + item[2].split(":")[0]
                 + ".html?i=" + i + searchStr + hash ;
-            
+
 	        html += '<li class="' + item[0] + '"><a href="' + url + '">'
 	            + '<span class="name">' + item[2] + "</span>"
 	            + '<br /><span class="sub">' + item[3] + '</span>'
@@ -145,15 +145,15 @@ var ErlDocs = (function(index) {
     function isSearchStr(str) {
         return typeof str !== "undefined" && str !== "";
     }
-    
+
     function filter(str) {
-        
+
         var results = isSearchStr(str) ? searchApps(str) : showModules(),
             html    = formatResults(results, str);
 
         $results[0].innerHTML = html;
         setSelected(0);
-        resultsCount = results.length;        
+        resultsCount = results.length;
     };
 
     function match(str, terms) {
@@ -166,10 +166,10 @@ var ErlDocs = (function(index) {
     };
 
     function parseQuery(url) {
-        
+
         var arr, query, i, len, tmp,
             qs = url.split("?")[1];
-        
+
         if (typeof qs !== "undefined") {
 	        arr   = qs.split("&");
             query = {};
@@ -185,9 +185,9 @@ var ErlDocs = (function(index) {
     function strToBool(val) {
         return val === "true";
     };
-    
+
     function init() {
-        
+
         var val, qs = parseQuery(document.location.search);
 
         if (qs && qs.search) {
@@ -198,7 +198,7 @@ var ErlDocs = (function(index) {
             $search.val($search.attr("placeholder"));
             filter();
         }
-    
+
         if (qs && qs.i) {
             setSelected(parseInt(qs.i, 10));
         } else {
@@ -215,27 +215,27 @@ var ErlDocs = (function(index) {
     $search.keydown(function (e) {
 
         // Run First keydown
-        setTimeout(function () { keypress(e); }, 0);        
-        
+        setTimeout(function () { keypress(e); }, 0);
+
         // // Set up a timer to repeat (holding down arrow keys etc)
         var timer = null, timeout = null,
             repeatKeys   = [33, 34, 38, 40, 8],
             set_interval = function () {
                 timer = setInterval(function () { keypress(e); }, 60);
             };
-        
+
         if ($.inArray(e.keyCode, repeatKeys) === -1) {
             return;
 	    }
-        
+
         function cleanup() {
             window.clearTimeout(timeout);
             $(document).unbind("keyup", cleanup);
             clearInterval(timer);
         }
-        
+
         $search.bind("keyup", cleanup);
-        timeout = window.setTimeout(set_interval, 300);        
+        timeout = window.setTimeout(set_interval, 300);
     });
 
     $search.focus(function () {
@@ -246,7 +246,7 @@ var ErlDocs = (function(index) {
             $search.val("");
         }
     });
-    
+
     $search.blur(function () {
         $("#sidebar").addClass("inactive");
         searchActive = false;
@@ -254,15 +254,15 @@ var ErlDocs = (function(index) {
         if ($search.val() ==="" ) {
             $search.val($search.attr("placeholder"));
         }
-    });    
+    });
 
     $(document).bind("keypress", function(e) {
 
         if (e.keyCode === 9) {
-            
+
             e.preventDefault();
             e.stopPropagation();
-            
+
             if(searchActive) {
                 $search.blur();
                 $("#content")[0].focus();
@@ -280,15 +280,15 @@ var ErlDocs = (function(index) {
 
     if (document.title.match("Module Index") === null) {
 	setDetails(getDetails(), function() {
-		$("#funwrapper").css({"display":"block"});    
+		$("#funwrapper").css({"display":"block"});
 	    });
     }
 
     $("#viewfuns").bind("mousedown", function(e) {
 
-        showingFuns = !showingFuns;        
+        showingFuns = !showingFuns;
         setDetails(getDetails(), null);
-        
+
         if (!!window.localStorage) {
             window.localStorage.footer = showingFuns;
         }
@@ -296,9 +296,9 @@ var ErlDocs = (function(index) {
 
     $(window).bind('resize', windowResize);
     windowResize();
-    
+
     init();
-    
+
 })(index);
 
 /* Copyright (C) 2007, 2008 gnombat@users.sourceforge.net */
