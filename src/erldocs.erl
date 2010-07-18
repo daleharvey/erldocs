@@ -133,7 +133,8 @@ module_index(Conf, Index) ->
     log("Creating index.html ...~n"),
 
     Html = "<h1>Module Index</h1><hr /><br /><div>"
-        ++ xml_to_str([ mod(X) || X = ["mod"|_] <- lists:sort(Index)])
+        ++ lists:flatten(io_lib:format("<!--~n~p~n-->~n", [Index]))
+        ++ xml_to_str(emit_apps([X || X = ["mod"|_] <- lists:sort(Index)]))
         ++ "</div>",
 
     Args = [{base,    "./"},
@@ -143,6 +144,16 @@ module_index(Conf, Index) ->
 
     ok = file:write_file([dest(Conf), "/index.html"],
                          file_tpl(Args, load_tpl(Conf))).
+
+emit_apps(L) ->
+    emit_apps(L, undefined).
+
+emit_apps([], _App) ->
+    [];
+emit_apps([X=["mod", App | _] | Rest], App) ->
+    [mod(X) | emit_apps(Rest, App)];
+emit_apps(L=[["mod", App | _] | _], _OtherApp) ->
+    [{h1, [], [App]} | emit_apps(L, App)].
 
 mod(["mod", App, Mod, Sum]) ->
     Url = App ++ "/" ++ Mod ++ ".html",
