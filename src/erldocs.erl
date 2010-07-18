@@ -150,7 +150,7 @@ emit_index(L) ->
       lists:sort(fun sort_index/2, L)).
 
 index_html(["app", App, _, _Sum]) ->
-    [{a, [{name, App}], []}, {h1, [], [App]}];
+    [{a, [{name, App}]}, {h1, [], [App]}];
 index_html(["mod", App, Mod, Sum]) ->
     Url = App ++ "/" ++ Mod ++ ".html",
     [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
@@ -198,7 +198,7 @@ render(erlref, App, Mod, Xml, Conf, Tpl) ->
                 || X <- lists:reverse(Funs) ],
 
     Args = [{base,    "../"},
-            {title,   Mod ++ " - " ++ kf(name, Conf)},
+            {title,   Mod ++ " (" ++ App ++ ") - " ++ kf(name, Conf)},
             {content, xml_to_str(NXml)},
             {funs,    xml_to_str({ul, [{id, "funs"}], XmlFuns})}],
 
@@ -386,6 +386,9 @@ is_whitespace(X) ->
 xml_to_str(Xml) ->
     xml_to_html(Xml).
 
+xml_to_html({Tag, Attr}) ->
+    %% primarily for cases such as <a name="">
+    fmt("<~s ~s>", [Tag, atos(Attr)]);
 xml_to_html({Tag, Attr, []}) ->
     fmt("<~s ~s />", [Tag, atos(Attr)]);
 xml_to_html({Tag, [], []}) ->
