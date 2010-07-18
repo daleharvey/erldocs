@@ -29,8 +29,7 @@ build(Conf) ->
 
     filelib:ensure_dir(dest(Conf)),
 
-    {ok, Bin} = file:read_file([static(Conf), "/", "erldocs.tpl"]),
-    Tpl       = binary_to_list(Bin),
+    Tpl = load_tpl(Conf),
 
     Fun   = fun(X, Y) -> build_apps(Conf, Tpl, X, Y) end,
     Index = strip_cos(lists:foldl(Fun, [], app_dirs(Conf))),
@@ -434,39 +433,32 @@ read_xml(Conf, XmlFile) ->
 %% Quick and dirty templating functions (replaces #KEY# in html with
 %% {key, "Some text"}
 load_tpl(Conf) ->
-    {ok, Bin} = file:read_file([static(Conf), "/","erldocs.tpl"]),
-    binary_to_list(Bin).
+    load_tpl_file(filename:join(static(Conf), "erldocs.tpl")).
+
+load_tpl_file(Path) ->
+    {ok, Bin} = file:read_file(Path),
+    Bin.
 
 file_tpl(Args, Tpl) ->
     str_tpl(Tpl, Args).
 
-str_tpl(Str, Args) ->
-    F = fun({Key, Value}, Tpl) ->
-                % re: goes nuts with memory usage, need to replace anyway
-                %Opts = [global],
-                %re:replace(Tpl, NKey, esc_regex(Value), Opts)
-                NKey = "#"++string:to_upper(atom_to_list(Key))++"#",
-                {ok, NTpl, _} = regexp:gsub(Tpl, NKey, esc_regex(Value)),
-                NTpl
-        end,
-    lists:foldr(F, Str, Args).
+str_tpl(Str, Args) when is_binary(Str) ->
+    D = dict:from_list(
+          [{list_to_binary("#" ++ string:to_upper(atom_to_list(K)) ++ "#"), V}
+           || {K, V} <- Args]),
+    Regexp = tl(lists:append([["|", K] || K <- dict:fetch_keys(D)])),
+    {ok, MP} = re:compile(["(", Regexp, ")"], []),
+    Parts = re:split(Str, MP, [{return, binary}, group]),
+    [tpl_sub(M, D) || M <- Parts].
+
+tpl_sub([Text, Key], D) ->
+    [Text, dict:fetch(Key, D)];
+tpl_sub([Text], _D) ->
+    Text.
 
 %% lazy shorthand
 fmt(Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
-
-%% Escape the replacement part of the regular expression
-%% so no spurios replacements
-esc_regex(List) when is_binary(List) ->
-    esc_regex(binary_to_list(List));
-esc_regex(List) ->
-    esc_regex(List, []).
-
-esc_regex([], Acc) ->
-    lists:flatten(lists:reverse(Acc));
-
-esc_regex([$&   | Rest], Acc) -> esc_regex(Rest, ["\\&" | Acc]);
-esc_regex([Else | Rest], Acc) -> esc_regex(Rest, [Else | Acc]).
 
 log(Str) ->
     io:format(Str).
