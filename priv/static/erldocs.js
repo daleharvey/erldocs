@@ -218,6 +218,25 @@ var ErlDocs = (function(index) {
         return val === "true";
     };
 
+    function updateTitle() {
+	var app, idx, mod, $t, i, j, results, len;
+	results = showModules();
+	len = results.length;
+	$t = $("body h1"),
+	mod = $t.text();
+	for (i = 0; i < len; i++) {
+	    idx = results[i];
+	    if (idx[0] !== "mod" || idx[2] !== mod) continue;
+	    app = idx[1];
+	    for (j = i - 1; j >= 0; j--) {
+		idx = results[j];
+		if (idx[0] !== "app" || idx[1] !== app) continue;
+		$t.html(mod + ' (<a href="../index.html?i=' + j + '#' + app + '">' + app + '</a>)');
+		return;
+	    }
+	}
+    }
+
     function init() {
 
         var val, qs = parseQuery(document.location.search);
@@ -313,6 +332,7 @@ var ErlDocs = (function(index) {
         strToBool(window.localStorage.footer);
 
     if (document.title.match("Module Index") === null) {
+	updateTitle();
 	setDetails(getDetails(), function() {
 		$("#funwrapper").css({"display":"block"});
 	    });
