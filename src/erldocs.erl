@@ -44,7 +44,8 @@ build_apps(Conf, Tpl, App, Index) ->
     AppName = bname(App),
     log("Building ~s (~p files)~n", [AppName, length(Files)]),
     Map = fun (F) -> build_file_map(Conf, Tpl, AppName, F) end,
-    pmapreduce(Map, fun lists:append/2, [], Files) ++ Index.
+    [["app", AppName, AppName, "(application)"] |
+     pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map(Conf, Tpl, AppName, File) ->
 
@@ -133,7 +134,7 @@ module_index(Conf, Index) ->
     log("Creating index.html ...~n"),
 
     Html = "<h1>Module Index</h1><hr /><br /><div>"
-        ++ lists:flatten(io_lib:format("<!--~n~p~n-->~n", [Index]))
+        %% ++ lists:flatten(io_lib:format("<!--~n~p~n-->~n", [Index]))
         ++ xml_to_str(emit_apps([X || X = ["mod"|_] <- lists:sort(Index)]))
         ++ "</div>",
 
@@ -153,18 +154,23 @@ emit_apps([], _App) ->
 emit_apps([X=["mod", App | _] | Rest], App) ->
     [mod(X) | emit_apps(Rest, App)];
 emit_apps(L=[["mod", App | _] | _], _OtherApp) ->
-    [{h1, [], [App]} | emit_apps(L, App)].
+    [{a, [{name, App}], []}, {h1, [], [App]} | emit_apps(L, App)].
 
 mod(["mod", App, Mod, Sum]) ->
     Url = App ++ "/" ++ Mod ++ ".html",
     {p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}.
 
-sort_index(["app" | _], ["mod" | _])             -> true;
-sort_index(["app" | _], ["fun" | _])             -> true;
-sort_index(["mod" | _], ["fun" | _])             -> true;
-sort_index(["mod", _, M1, _], ["mod", _, M2, _]) ->
-    string:to_lower(M1) < string:to_lower(M2);
-sort_index(_, _)                                 -> false.
+type_ordering("app") -> 1;
+type_ordering("mod") -> 2;
+type_ordering("fun") -> 3.
+
+index_ordering([Type, App, Mod, _Sum]) ->
+    [string:to_lower(App),
+     type_ordering(Type),
+     string:to_lower(Mod)].
+
+sort_index(A, B) ->
+    index_ordering(A) =< index_ordering(B).
 
 javascript_index(Conf, FIndex) ->
 

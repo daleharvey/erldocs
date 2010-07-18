@@ -42,13 +42,18 @@ var ErlDocs = (function(index) {
         $("#funwrapper").animate({"top":details.fTop}, "normal", fun);
     };
 
-    function scrollIntoView($parent, $child) {
+    function scrollIntoView($parent, $child, force) {
 
         var childTop     = $child.position().top - RESULT_OFFSET_Y,
             scrollTop    = $parent[0].scrollTop,
             childHeight  = $child.height(),
             parentHeight = $parent.height(),
             newTop       = null;
+
+	if (force) {
+	    $parent[0].scrollTop = scrollTop + childTop;
+	    return;
+	}
 
         if (childTop < 0) {
             newTop = scrollTop + childTop;
@@ -65,7 +70,7 @@ var ErlDocs = (function(index) {
         }
     };
 
-    function setSelected(x) {
+    function setSelected(x, force) {
 
         var sel, children = $results.children("li");
 
@@ -76,7 +81,7 @@ var ErlDocs = (function(index) {
 	        selected = x;
 	        sel = children.eq(x).addClass("selected");
             if (sel.length > 0) {
-                scrollIntoView($results, sel);
+                scrollIntoView($results, sel, force);
             }
         }
     };
@@ -115,7 +120,7 @@ var ErlDocs = (function(index) {
 
         for (i = 0; i < len; i += 1) {
             item = index[i];
-            if (item[0] === "mod") {
+            if (item[0] === "mod" || item[0] === "app") {
                 results.push(item);
             }
         }
@@ -143,7 +148,7 @@ var ErlDocs = (function(index) {
 
     function formatResults(results, str) {
 
-        var i, item, hash, url, html = "",
+        var i, item, hash, url, path, html = "",
             len       = results.length,
             searchStr = isSearchStr(str) ? "&search="+str : "";
 
@@ -151,15 +156,19 @@ var ErlDocs = (function(index) {
 
             item = results[i];
 
-	        hash = (item[0] === "fun") ? "#" + item[2].split(":")[1] : "";
+	    if (item[0] === "app") {
+		hash = "#" + item[1];
+		path = "index";
+	    } else {
+		hash = (item[0] === "fun") ? "#" + item[2].split(":")[1] : "";
+		path = item[1] + "/" + item[2].split(":")[0];
+	    }
+	    url = CURRENT_ROOT + path + ".html?i=" + i + searchStr + hash;
 
-	        url = CURRENT_ROOT + item[1] + "/" + item[2].split(":")[0]
-                + ".html?i=" + i + searchStr + hash ;
-
-	        html += '<li class="' + item[0] + '"><a href="' + url + '">'
-	            + '<span class="name">' + item[2] + "</span>"
-	            + '<br /><span class="sub">' + item[3] + '</span>'
-	            + '</a></li>';
+	    html += '<li class="' + item[0] + '"><a href="' + url + '">'
+	        + '<span class="name">' + item[2] + "</span>"
+	        + '<br /><span class="sub">' + item[3] + '</span>'
+	        + '</a></li>';
         }
 
         return html;
@@ -223,7 +232,7 @@ var ErlDocs = (function(index) {
         }
 
         if (qs && qs.i) {
-            setSelected(parseInt(qs.i, 10));
+            setSelected(parseInt(qs.i, 10), true);
         } else {
             setSelected(0);
         }
