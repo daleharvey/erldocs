@@ -1,5 +1,6 @@
 -module(erldocs).
 -export([ copy_static_files/1, build/1 ]).
+-export([mapreduce/4, pmapreduce/4, pmapreduce/5]).
 -include_lib("kernel/include/file.hrl").
 
 %% @doc Copy static files
@@ -42,16 +43,16 @@ build_apps(Conf, Tpl, App, Index) ->
     Files   = ensure_docsrc(App),
     AppName = bname(App),
     log("Building ~s (~p files)~n", [AppName, length(Files)]),
-    Fun = fun(X, Acc) -> build_files(Conf, Tpl, AppName, X, Acc) end,
-    lists:foldl(Fun, Index, Files).
+    Map = fun (F) -> build_file_map(Conf, Tpl, AppName, F) end,
+    pmapreduce(Map, fun lists:append/2, [], Files) ++ Index.
 
-build_files(Conf, Tpl, AppName, File, Index) ->
+build_file_map(Conf, Tpl, AppName, File) ->
 
     log("  + ~p~n", [bname(File)]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
     case lists:member(Type, buildable()) of
-        false -> Index;
+        false -> [];
         true  ->
 
             Module = bname(File, ".xml"),
@@ -76,10 +77,8 @@ build_files(Conf, Tpl, AppName, File, Index) ->
             ok = render(Type, AppName, Module, Content, Conf, Tpl),
 
             case lists:member({AppName, Module}, ignore()) of
-                true -> Index;
-                false ->
-                    lists:append([ ["mod", AppName, Module, Sum1] |  Funs],
-                                 Index)
+                true -> [];
+                false -> [ ["mod", AppName, Module, Sum1] |  Funs]
             end
     end.
 
@@ -412,13 +411,8 @@ read_xml(Conf, XmlFile) ->
     Opts  = [{fetch_path, [kf(root, Conf) ++ "/priv/dtd/"]},
              {encoding,   "latin1"}],
 
-    Fun = fun() ->
-                  {ok, Bin} = file:read_file(XmlFile),
-                  {Xml, _}  = xmerl_scan:string(binary_to_list(Bin), Opts),
-                  xmerl_lib:simplify_element(Xml)
-          end,
-
-    tmp_cd(filename:dirname(XmlFile), Fun).
+    {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
+    xmerl_lib:simplify_element(Xml).
 
 %% Quick and dirty templating functions (replaces #KEY# in html with
 %% {key, "Some text"}
@@ -495,3 +489,35 @@ ignore() ->
      {"kernel", "zlib"},
      {"kernel", "erlang"},
      {"kernel", "erl_prim_loader"}].
+
+-type map_fun(D, R) :: fun((D) -> R).
+-type reduce_fun(T) :: fun((T, _) -> _).
+
+-spec pmapreduce(map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
+pmapreduce(Map, Reduce, Acc0, L) ->
+    pmapreduce(Map, Reduce, Acc0, L, 4).
+
+-spec pmapreduce(map_fun(T, R), reduce_fun(R), R, [T], pos_integer()) -> [R].
+pmapreduce(Map, Reduce, Acc0, L, N) ->
+    Keys = [rpc:async_call(node(), ?MODULE, mapreduce,
+                           [Map, Reduce, Acc0, Segment])
+            || Segment <- segment(L, N)],
+    mapreduce(fun rpc:yield/1, Reduce, Acc0, Keys).
+
+-spec mapreduce(map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
+mapreduce(Map, Reduce, Acc0, L) ->
+    F = fun (Elem, Acc) ->
+                Reduce(Map(Elem), Acc)
+        end,
+    lists:foldl(F, Acc0, lists:reverse(L)).
+
+-spec segment([T], pos_integer()) -> [[T]].
+segment(List, Segments) ->
+    segment(List, length(List) div Segments, Segments).
+
+-spec segment([T], non_neg_integer(), pos_integer()) -> [[T]].
+segment(List, _N, 1) ->
+    [List];
+segment(List, N, Segments) ->
+    {Front, Back} = lists:split(N, List),
+    [Front | segment(Back, N, Segments - 1)].
