@@ -19,7 +19,7 @@ main(Args) ->
 %% @doc Parses arguments passed to script and calls
 %% appropriate function.
 -spec dispatch(list(), list()) -> ok.
-dispatch(Conf, ["copystatic"]) ->
+dispatch(Conf, ["copystatic" | _]) ->
     erldocs:copy_static_files(Conf);
 dispatch(Conf, _) ->
     Start = erlang:now(),
