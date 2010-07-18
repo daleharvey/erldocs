@@ -133,7 +133,7 @@ module_index(Conf, Index) ->
     log("Creating index.html ...~n"),
 
     Html = "<h1>Module Index</h1><hr /><br /><div>"
-        ++ xml_to_str(emit_apps([X || X = ["mod"|_] <- lists:sort(Index)]))
+        ++ xml_to_str(emit_index(Index))
         ++ "</div>",
 
     Args = [{base,    "./"},
@@ -144,19 +144,18 @@ module_index(Conf, Index) ->
     ok = file:write_file([dest(Conf), "/index.html"],
                          file_tpl(Args, load_tpl(Conf))).
 
-emit_apps(L) ->
-    emit_apps(L, undefined).
+emit_index(L) ->
+    lists:flatmap(
+      fun index_html/1,
+      lists:sort(fun sort_index/2, L)).
 
-emit_apps([], _App) ->
-    [];
-emit_apps([X=["mod", App | _] | Rest], App) ->
-    [mod(X) | emit_apps(Rest, App)];
-emit_apps(L=[["mod", App | _] | _], _OtherApp) ->
-    [{a, [{name, App}], []}, {h1, [], [App]} | emit_apps(L, App)].
-
-mod(["mod", App, Mod, Sum]) ->
+index_html(["app", App, _, _Sum]) ->
+    [{a, [{name, App}], []}, {h1, [], [App]}];
+index_html(["mod", App, Mod, Sum]) ->
     Url = App ++ "/" ++ Mod ++ ".html",
-    {p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}.
+    [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
+index_html(_) ->
+    [].
 
 type_ordering("app") -> 1;
 type_ordering("mod") -> 2;
@@ -178,8 +177,7 @@ javascript_index(Conf, FIndex) ->
                 [Else, App, NMod, string:substr(Sum, 1, 50)]
         end,
 
-    Index = lists:sort( fun(X, Y) -> sort_index(X, Y) end,
-                        [ F(X) || X <- FIndex ] ),
+    Index = lists:sort(fun sort_index/2, lists:map(F, FIndex)),
     Js    = fmt("var index = ~p;", [Index]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
