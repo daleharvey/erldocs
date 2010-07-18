@@ -133,7 +133,6 @@ module_index(Conf, Index) ->
     log("Creating index.html ...~n"),
 
     Html = "<h1>Module Index</h1><hr /><br /><div>"
-        %% ++ lists:flatten(io_lib:format("<!--~n~p~n-->~n", [Index]))
         ++ xml_to_str(emit_apps([X || X = ["mod"|_] <- lists:sort(Index)]))
         ++ "</div>",
 
