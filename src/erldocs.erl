@@ -13,15 +13,15 @@ copy_static_files(Conf) ->
 build(Conf) ->
 
     filelib:ensure_dir(dest(Conf)),
-    
+
     {ok, Bin} = file:read_file([static(Conf), "/", "erldocs.tpl"]),
     Tpl       = binary_to_list(Bin),
-    
+
     Fun   = fun(X, Y) -> build_apps(Conf, Tpl, X, Y) end,
     Index = strip_cos(lists:foldl(Fun, [], app_dirs(Conf))),
 
     ok = module_index(Conf, Index),
-    ok = javascript_index(Conf, Index),                     
+    ok = javascript_index(Conf, Index),
     ok = copy_static_files(Conf).
 
 build_apps(Conf, Tpl, App, Index) ->
@@ -32,19 +32,19 @@ build_apps(Conf, Tpl, App, Index) ->
     lists:foldl(Fun, Index, Files).
 
 build_files(Conf, Tpl, AppName, File, Index) ->
-    
+
     log("  + ~p~n", [bname(File)]),
     {Type, _Attr, Content} = read_xml(Conf, File),
-    
+
     case lists:member(Type, buildable()) of
         false -> Index;
         true  ->
 
             Module = bname(File, ".xml"),
             Xml = strip_whitespace(Content),
-           
+
             Sum2 = case Type of
-                       erlref ->                    
+                       erlref ->
                            {modulesummary, [], Sum}
                                = lists:keyfind(modulesummary,1, Xml),
                            Sum;
@@ -53,14 +53,14 @@ build_files(Conf, Tpl, AppName, File, Index) ->
                                = lists:keyfind(libsummary, 1, Xml),
                            Sum
                   end,
-            
+
             Sum1 = lists:flatten(Sum2),
-            
+
             % strip silly shy characters
             Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
-            
+
             ok = render(Type, AppName, Module, Content, Conf, Tpl),
-            
+
             case lists:member({AppName, Module}, ignore()) of
                 true -> Index;
                 false ->
@@ -68,7 +68,7 @@ build_files(Conf, Tpl, AppName, File, Index) ->
                                  Index)
             end
     end.
-    
+
 %% @doc strip out the cos* files from the index, who the hell needs them
 %% anyway
 -spec strip_cos(list()) -> list().
@@ -81,29 +81,29 @@ ensure_docsrc(AppDir) ->
         false ->
             log("No docs for ~s, attempting to build~n", [bname(AppDir)]),
             tmp_cd(AppDir ++ "/doc/src/", fun() -> gen_docsrc(AppDir) end)
-    end.    
+    end.
 
 gen_docsrc(AppDir) ->
-    
+
     Files = [ try ok = docb_gen:module(File),
                   AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
               catch
                   _:_ -> ignore
               end || File <- filelib:wildcard(AppDir ++ "/src/*.erl") ],
-    
+
     [ File || File <- Files, File =/= ignore ].
-               
+
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
 -spec tmp_cd(list(), fun()) -> term().
 tmp_cd(Dir, Fun) ->
-    
+
     {ok, OldDir} = file:get_cwd(),
-    
+
     ok = filelib:ensure_dir(Dir),
     ok = file:set_cwd(Dir),
-    
+
     try
         Result = Fun(),
         ok = file:set_cwd(OldDir),
@@ -113,16 +113,16 @@ tmp_cd(Dir, Fun) ->
             ok = file:set_cwd(OldDir),
             throw({Type, Err})
     end.
-            
-    
+
+
 module_index(Conf, Index) ->
 
     log("Creating index.html ...~n"),
-    
+
     Html = "<h1>Module Index</h1><hr /><br /><div>"
         ++ xml_to_str([ mod(X) || X = ["mod"|_] <- lists:sort(Index)])
         ++ "</div>",
-    
+
     Args = [{base,    "./"},
             {title,   "Module Index - " ++ kf(name, Conf)},
             {content, Html},
@@ -141,45 +141,45 @@ sort_index(["mod" | _], ["fun" | _])             -> true;
 sort_index(["mod", _, M1, _], ["mod", _, M2, _]) ->
     string:to_lower(M1) < string:to_lower(M2);
 sort_index(_, _)                                 -> false.
-    
+
 javascript_index(Conf, FIndex) ->
 
     log("Creating erldocs_index.js ...~n"),
-    
+
     F = fun([Else, App, NMod, Sum]) ->
                 [Else, App, NMod, string:substr(Sum, 1, 50)]
         end,
-    
+
     Index = lists:sort( fun(X, Y) -> sort_index(X, Y) end,
                         [ F(X) || X <- FIndex ] ),
     Js    = fmt("var index = ~p;", [Index]),
-    
+
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
 
 render(cref, App, Mod, Xml, Conf, Tpl) ->
     render(erlref, App, Mod, Xml, Conf, Tpl);
 
 render(erlref, App, Mod, Xml, Conf, Tpl) ->
-    
+
     File = filename:join([dest(Conf), App, Mod ++ ".html"]),
     ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
-    
+
     Acc = [{ids,[]}, {list, ul}, {functions, []}],
     {[_Id, _List, {functions, Funs}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
-    
+
     XmlFuns = [{li, [], [{a, [{href, "#"++X}], [X]}]}
                 || X <- lists:reverse(Funs) ],
-        
+
     Args = [{base,    "../"},
             {title,   Mod ++ " - " ++ kf(name, Conf)},
             {content, xml_to_str(NXml)},
             {funs,    xml_to_str({ul, [{id, "funs"}], XmlFuns})}],
-    
+
     ok = file:write_file(File, file_tpl(Args, Tpl)).
 
 render(Fun, List, Acc) when is_list(List) ->
-    case io_lib:char_list(List) of 
+    case io_lib:char_list(List) of
         true  ->
             {Acc, List};
         false ->
@@ -187,7 +187,7 @@ render(Fun, List, Acc) when is_list(List) ->
                         {NAcc, NEl} = render(Fun, X, Ac),
                         {NAcc, [NEl | L]}
                 end,
-            
+
             {Ac, L} = lists:foldl(F, {Acc, []}, List),
             {Ac, lists:reverse(L)}
     end;
@@ -203,7 +203,7 @@ render(Fun, Element, Acc) ->
            (Else, NAcc) ->
                 {NAcc, Else}
         end,
-    
+
     case Fun(Element, Acc) of
         {El, NAcc} -> F(El, NAcc);
         El         -> F(El, Acc)
@@ -217,10 +217,10 @@ get_funs(App, Mod, {funcs, [], Funs}) ->
             [], Funs).
 
 fun_stuff(App, Mod, {func, [], Child}) ->
-    
+
     {fsummary, [], Xml} = lists:keyfind(fsummary, 1, Child),
     Summary = string:substr(xml_to_str(Xml), 1, 50),
-    
+
     F = fun({name, [], Name}, Acc) ->
                 case make_name(Name) of
                     ignore -> Acc;
@@ -228,7 +228,7 @@ fun_stuff(App, Mod, {func, [], Child}) ->
                 end;
            (_Else, Acc) -> Acc
         end,
-    
+
     lists:foldl(F, [], Child).
 
 make_name(Name) ->
@@ -257,7 +257,7 @@ add_html(Link) ->
     case string:tokens(Link, "#") of
         [Tmp]    -> Tmp++".html";
         [N1, N2] -> lists:flatten([N1, ".html#", N2])
-    end.     
+    end.
 
 %% Transforms erlang xml format to html
 tr_erlref({header,[],_Child}, _Acc) ->
@@ -324,7 +324,7 @@ tr_erlref({name, [], Child}, [{ids, Ids}, List, {functions, Funs}]) ->
         ignore -> ignore;
         Name   ->
             NName = inc_name(Name, Ids, 0),
-            { {h3, [{id, NName}], [Child]},     
+            { {h3, [{id, NName}], [Child]},
               [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}]}
     end;
 tr_erlref({fsummary, [], _Child}, _Acc) ->
@@ -343,7 +343,7 @@ inc_name(Name, List, Acc) ->
 
 %% Strips xml children that are entirely whitespace (space, tabs, newlines)
 strip_whitespace(List) when is_list(List) ->
-    [ strip_whitespace(X) || X <- List, is_whitespace(X) ]; 
+    [ strip_whitespace(X) || X <- List, is_whitespace(X) ];
 strip_whitespace({El,Attr,Children}) ->
     {El, Attr, strip_whitespace(Children)};
 strip_whitespace(Else) ->
@@ -392,7 +392,7 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 
 %% @doc parse xml file against otp's dtd, need to cd into the
 %% source directory because files are addressed relative to it
--spec read_xml(list(), list()) -> tuple().    
+-spec read_xml(list(), list()) -> tuple().
 read_xml(Conf, XmlFile) ->
 
     Opts  = [{fetch_path, [kf(root, Conf) ++ "/priv/dtd/"]},
@@ -403,7 +403,7 @@ read_xml(Conf, XmlFile) ->
                   {Xml, _}  = xmerl_scan:string(binary_to_list(Bin), Opts),
                   xmerl_lib:simplify_element(Xml)
           end,
-    
+
     tmp_cd(filename:dirname(XmlFile), Fun).
 
 %% Quick and dirty templating functions (replaces #KEY# in html with
@@ -414,11 +414,11 @@ load_tpl(Conf) ->
 
 file_tpl(Args, Tpl) ->
     str_tpl(Tpl, Args).
-    
+
 str_tpl(Str, Args) ->
     F = fun({Key, Value}, Tpl) ->
                 % re: goes nuts with memory usage, need to replace anyway
-                %Opts = [global],               
+                %Opts = [global],
                 %re:replace(Tpl, NKey, esc_regex(Value), Opts)
                 NKey = "#"++string:to_upper(atom_to_list(Key))++"#",
                 {ok, NTpl, _} = regexp:gsub(Tpl, NKey, esc_regex(Value)),
@@ -432,9 +432,9 @@ fmt(Format, Args) ->
 
 %% Escape the replacement part of the regular expression
 %% so no spurios replacements
-esc_regex(List) when is_binary(List) ->    
+esc_regex(List) when is_binary(List) ->
     esc_regex(binary_to_list(List));
-esc_regex(List) ->    
+esc_regex(List) ->
     esc_regex(List, []).
 
 esc_regex([], Acc) ->
