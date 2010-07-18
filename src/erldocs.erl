@@ -1,12 +1,26 @@
 -module(erldocs).
 -export([ copy_static_files/1, build/1 ]).
+-include_lib("kernel/include/file.hrl").
 
 %% @doc Copy static files
 -spec copy_static_files(list()) -> ok.
 copy_static_files(Conf) ->
-    [ {ok, _} = file:copy([static(Conf), "/", File], [dest(Conf), "/", File])
-      || File <- static_files() ],
+    [ok = copy_file(filename:join(static(Conf), File),
+                    filename:join(dest(Conf), File))
+     || File <- static_files()],
     ok.
+
+%% @doc file:copy/2 unless the destination is already a symlink. This is useful
+%%      when working on the JavaScript front-end.
+-spec copy_file(string(), string()) -> ok.
+copy_file(Src, Dest) ->
+    case file:read_link_info(Dest) of
+        {ok, #file_info{type=symlink}} ->
+            ok;
+        _ ->
+            {ok, _} = file:copy(Src, Dest),
+            ok
+    end.
 
 %% @doc Build everything
 -spec build(list()) -> ok.
