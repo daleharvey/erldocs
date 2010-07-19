@@ -1,5 +1,5 @@
 -module(erldocs).
--export([ copy_static_files/1, build/1 ]).
+-export([copy_static_files/1, build/1, dispatch/1]).
 -export([mapreduce/4, pmapreduce/4, pmapreduce/5]).
 -include_lib("kernel/include/file.hrl").
 
@@ -23,6 +23,23 @@ copy_file(Src, Dest) ->
             ok
     end.
 
+%% @doc Parses arguments passed to script and calls
+%% appropriate function.
+-spec dispatch(list()) -> ok.
+dispatch(Conf) ->
+    case lists:keyfind(copystatic, 1, Conf) of
+        {_, true} ->
+            copy_static_files(Conf);
+        false ->
+            Start = erlang:now(),
+            build(Conf),
+            Diff = timer:now_diff(erlang:now(), Start),
+            Mins = trunc(Diff * 1.667e-8),
+            log("Woot, finished in ~p Minutes ~p Seconds~n",
+                [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))])
+    end.
+
+
 %% @doc Build everything
 -spec build(list()) -> ok.
 build(Conf) ->
@@ -39,7 +56,7 @@ build(Conf) ->
     ok = copy_static_files(Conf).
 
 build_apps(Conf, Tpl, App, Index) ->
-    Files   = ensure_docsrc(App),
+    Files   = ensure_docsrc(App, Conf),
     AppName = bname(App),
     log("Building ~s (~p files)~n", [AppName, length(Files)]),
     Map = fun (F) -> build_file_map(Conf, Tpl, AppName, F) end,
@@ -88,11 +105,17 @@ build_file_map(Conf, Tpl, AppName, File) ->
 strip_cos(Index) ->
     [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
 
-ensure_docsrc(AppDir) ->
-    case filelib:is_dir(AppDir ++ "/doc/src/") of
-        true  -> filelib:wildcard(AppDir ++ "/doc/src/*.xml");
+ensure_docsrc(AppDir, Conf) ->
+    case lists:keyfind(gen_docsrc, 1, Conf) of
         false ->
-            log("No docs for ~s, attempting to build~n", [bname(AppDir)]),
+            case filelib:is_dir(AppDir ++ "/doc/src/") of
+                true  -> filelib:wildcard(AppDir ++ "/doc/src/*.xml");
+                false ->
+                    log("No docs for ~s, attempting to build~n", [bname(AppDir)]),
+                    tmp_cd(AppDir ++ "/doc/src/", fun() -> gen_docsrc(AppDir) end)
+            end;
+        {_, true} ->
+            log("Attempting to build docs for ~s~n", [bname(AppDir)]),
             tmp_cd(AppDir ++ "/doc/src/", fun() -> gen_docsrc(AppDir) end)
     end.
 
@@ -191,6 +214,7 @@ render(erlref, App, Mod, Xml, Conf, Tpl) ->
     ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
 
     Acc = [{ids,[]}, {list, ul}, {functions, []}],
+
     {[_Id, _List, {functions, Funs}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
 
@@ -312,6 +336,7 @@ tr_erlref({v, [], Child}, _Acc) ->
     {li, [], [{code, [], Child}]};
 tr_erlref({seealso, [{marker, Marker}], Child}, _Acc) ->
     N = case string:tokens(Marker, ":") of
+            [] -> add_html(lists:flatten(Child));
 	    [Tmp]     -> add_html(Tmp);
 	    [Ap | Md] ->  "../"++Ap++"/" ++ add_html(lists:flatten(Md))
 	end,

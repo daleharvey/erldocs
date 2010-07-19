@@ -4,43 +4,53 @@
 %% @doc Called automatically by escript
 -spec main(list()) -> ok.
 main(Args) ->
-
     ok = file:set_cwd(filename:dirname(escript:script_name())),
     ok = filelib:ensure_dir("ebin/"),
     code:add_path("ebin"),
 
     {ok, _} = compile:file("src/erldocs.erl", [{outdir, "ebin"}, verbose]),
 
-    try dispatch(create_conf(sys_conf(Args)), Args)
-    catch throw:Error ->
-            log("Error running script:~n  ~p",[Error])
+    Conf = create_conf(Args),
+    try erldocs:dispatch(Conf)
+    catch Type:Error ->
+            log("Error running script:~n~p~n~p~n",
+                [erlang:get_stacktrace(), {Type, Error}])
     end.
 
-%% @doc Parses arguments passed to script and calls
-%% appropriate function.
--spec dispatch(list(), list()) -> ok.
-dispatch(Conf, ["copystatic" | _]) ->
-    erldocs:copy_static_files(Conf);
-dispatch(Conf, _) ->
-    Start = erlang:now(),
-    erldocs:build(Conf),
-    Diff = timer:now_diff(erlang:now(), Start),
-    Mins = trunc(Diff * 1.667e-8),
-    log("Woot, finished in ~p Minutes ~p Seconds~n",
-        [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))]).
+-spec parse_options([string()]) -> [{atom(), _}].
+parse_options(Args) ->
+    lists:flatmap(fun (Arg) -> parse_option(Arg) end, Args).
 
-sys_conf([]) ->
-    "priv/sys.conf";
-sys_conf(["--sys-conf=" ++ Path | _T]) ->
-    Path;
-sys_conf([_H | T]) ->
-    sys_conf(T).
+-spec parse_option(string()) -> [{atom(), _}].
+parse_option("--sys-conf=" ++ Path) ->
+    [{sys_conf, Path}];
+parse_option("--gen-docsrc") ->
+    [{gen_docsrc, true}];
+parse_option("copystatic") ->
+    [{copystatic, true}];
+parse_option("--name=" ++ Name) ->
+    [{name, Name}];
+parse_option(Unknown) ->
+    throw({unknown_option, Unknown}).
 
-create_conf(Path) ->
+-spec getopt(atom(), [{atom(), _}], _) -> _.
+getopt(Key, Opts, Default) ->
+    case lists:keyfind(Key, 1, Opts) of
+        false ->
+            Default;
+        {_, V} ->
+            V
+    end.
+
+-spec create_conf([string()]) -> [{atom(), _}].
+create_conf(Args) ->
+    Opts = parse_options(Args),
+    Path = getopt(sys_conf, Opts, "priv/sys.conf"),
     {ok, [Config]}  = file:consult(Path),
     {erldocs, Conf} = lists:keyfind(erldocs, 1, Config),
     {ok, Root}      = file:get_cwd(),
-    [{root, Root} | Conf].
+    Opts ++ [{root, Root} | Conf].
 
+-spec log(string(), [_]) -> ok.
 log(Str, Args) ->
     io:format(Str, Args).
