@@ -121,7 +121,8 @@ ensure_docsrc(AppDir, Conf) ->
 
 gen_docsrc(AppDir) ->
 
-    Files = [ try ok = docb_gen:module(File),
+    Includes = filelib:wildcard(AppDir ++ "/include"),
+    Files = [ try ok = docb_gen:module(File, [{includes, Includes}]),
                   AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
               catch
                   _:_ -> ignore
