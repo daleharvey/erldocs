@@ -60,7 +60,7 @@ build_apps(Conf, Tpl, App, Index) ->
     AppName = bname(App),
     log("Building ~s (~p files)~n", [AppName, length(Files)]),
     Map = fun (F) -> build_file_map(Conf, Tpl, AppName, F) end,
-    [["app", AppName, AppName, "(application)"] |
+    [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map(Conf, Tpl, AppName, File) ->
@@ -173,7 +173,7 @@ emit_index(L) ->
       lists:sort(fun sort_index/2, L)).
 
 index_html(["app", App, _, _Sum]) ->
-    [{a, [{name, App}]}, {h1, [], [App]}];
+    [{a, [{name, App}]}, {h4, [], [App]}];
 index_html(["mod", App, Mod, Sum]) ->
     Url = App ++ "/" ++ Mod ++ ".html",
     [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
@@ -319,6 +319,7 @@ tr_erlref({term,[{id, Term}], _Child}, _Acc) ->
 tr_erlref({lib,[],Lib}, _Acc) ->
     {h1, [], [lists:flatten(Lib)]};
 tr_erlref({module,[],Module}, _Acc) ->
+    io:format("wtf ~p~n",[lists:flatten(Module)]),
     {h1, [], [lists:flatten(Module)]};
 tr_erlref({modulesummary, [], Child}, _Acc) ->
     {h2, [{class, "modsummary"}], Child};

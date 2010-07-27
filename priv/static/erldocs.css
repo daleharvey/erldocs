@@ -25,6 +25,7 @@ p {
 }
 
 h1 {  
+    display:inline;
     font-size   : 24px;
     font-weight : bold;
 }
@@ -53,6 +54,11 @@ dd {
     margin-bottom : 8px;
 }
 
+h4 a { 
+    color:black; 
+font-weight:bold;
+    /* font-size:80%; */
+}
 a {
     color : #B22222;
 }
@@ -129,6 +135,7 @@ h2.modsummary {
     font-size     : 11px;
     border-bottom : 1px solid #999;
     margin-bottom : 15px;
+    margin-top : 10px;
 }
 
 .functions {
@@ -295,7 +302,7 @@ h2.modsummary {
     text-shadow     : #000 1px 1px 1px;
 }
 
-#results .sub {  
+.sub {  
     color       : #555;
     font-size   : 10px;
     white-space : nowrap;
@@ -325,6 +332,14 @@ h2.modsummary {
 
 #results li.app .dat {  
     background : red;
+}
+
+.app .sub {  
+    position:absolute;
+    top:5px;
+    right:5px;
+    color:#999;
+    text-shadow:none;
 }
 
 #sideinfo {  
