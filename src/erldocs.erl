@@ -319,7 +319,6 @@ tr_erlref({term,[{id, Term}], _Child}, _Acc) ->
 tr_erlref({lib,[],Lib}, _Acc) ->
     {h1, [], [lists:flatten(Lib)]};
 tr_erlref({module,[],Module}, _Acc) ->
-    io:format("wtf ~p~n",[lists:flatten(Module)]),
     {h1, [], [lists:flatten(Module)]};
 tr_erlref({modulesummary, [], Child}, _Acc) ->
     {h2, [{class, "modsummary"}], Child};

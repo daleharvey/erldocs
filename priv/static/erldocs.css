@@ -22,6 +22,7 @@ h1, h2, h3, h4, h5, h6 {
 p {
     margin : 7px 0px 12px 0px;
     color  : #222;
+    line-height:135%;
 }
 
 h1 {  
