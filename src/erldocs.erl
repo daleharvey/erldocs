@@ -126,7 +126,8 @@ gen_docsrc(AppDir) ->
                   AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
               catch
                   _:_ -> ignore
-              end || File <- filelib:wildcard(AppDir ++ "/src/*.erl") ],
+              end || File <- filelib:wildcard(AppDir ++ "/*.erl") ++
+                         filelib:wildcard(AppDir ++ "/src/*.erl")],
 
     [ File || File <- Files, File =/= ignore ].
 
