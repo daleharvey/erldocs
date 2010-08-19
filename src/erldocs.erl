@@ -122,10 +122,9 @@ ensure_docsrc(AppDir, Conf) ->
 gen_docsrc(AppDir) ->
 
     Includes = filelib:wildcard(AppDir ++ "/include"),
-    Files = [ try ok = docb_gen:module(File, [{includes, Includes}]),
+    Files = [ begin
+                  catch docb_gen:module(File, [{includes, Includes}]),
                   AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
-              catch
-                  _:_ -> ignore
               end || File <- filelib:wildcard(AppDir ++ "/*.erl") ++
                          filelib:wildcard(AppDir ++ "/src/*.erl")],
 

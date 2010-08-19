@@ -2,7 +2,7 @@
 <html lang="en">
 
   <head>
-    <meta charset="utf-8" />
+    <meta charset="latin1" />
     <title>#TITLE# - erldocs.com (Erlang Documentation)</title>
     <link type="text/css" rel="stylesheet" href="#BASE#erldocs.css" />
   </head>
