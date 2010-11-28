@@ -18,17 +18,12 @@ copy_static_files(Conf) ->
 %% appropriate function.
 -spec dispatch(list()) -> ok.
 dispatch(Conf) ->
-    case lists:keyfind(copystatic, 1, Conf) of
-        {_, true} ->
-            copy_static_files(Conf);
-        false ->
-            Start = erlang:now(),
-            build(Conf),
-            Diff = timer:now_diff(erlang:now(), Start),
-            Mins = trunc(Diff * 1.667e-8),
-            log("Woot, finished in ~p Minutes ~p Seconds~n",
-                [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))])
-    end.
+    Start = erlang:now(),
+    build(Conf),
+    Diff = timer:now_diff(erlang:now(), Start),
+    Mins = trunc(Diff * 1.667e-8),
+    log("Woot, finished in ~p Minutes ~p Seconds~n",
+        [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))]).
 
 
 %% @doc Build everything

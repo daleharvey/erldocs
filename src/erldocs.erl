@@ -18,10 +18,6 @@ parse_options(Args) ->
 -spec parse_option(string()) -> [{atom(), _}].
 parse_option("--sys-conf=" ++ Path) ->
     [{sys_conf, Path}];
-parse_option("--gen-docsrc") ->
-    [{gen_docsrc, true}];
-parse_option("copystatic") ->
-    [{copystatic, true}];
 parse_option("--name=" ++ Name) ->
     [{name, Name}];
 parse_option(Unknown) ->
