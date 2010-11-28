@@ -207,7 +207,7 @@ render(erlref, App, Mod, Xml, Conf) ->
                 || X <- lists:reverse(Funs) ],
 
     Args = [{base,    "../"},
-            {title,   Mod ++ " (" ++ App ++ ") - " ++ kf(name, Conf)},
+            {title,   Mod ++ " (" ++ App ++ ") - "},
             {content, xml_to_str(NXml)},
             {funs,    xml_to_str({ul, [{id, "funs"}], XmlFuns})}],
 
@@ -459,7 +459,7 @@ kf(Key, Conf) ->
 %% @doc path to the destination folder
 -spec dest(list()) -> list().
 dest(Conf) ->
-    [kf(root, Conf), "/priv/www/", kf(name, Conf), "/"].
+    [kf(dest, Conf)].
 
 bname(Name) ->
     filename:basename(Name).
