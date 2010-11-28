@@ -12,7 +12,9 @@ Building
 ========
 
 `git clone git://github.com/dreverri/erldocs.git
+
 cd erldocs
+
 make`
 
 Usage
