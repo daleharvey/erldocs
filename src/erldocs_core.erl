@@ -145,7 +145,7 @@ module_index(Conf, Index) ->
         ++ "</div>",
 
     Args = [{base,    "./"},
-            {title,   "Module Index - " ++ kf(name, Conf)},
+            {title,   "Module Index"},
             {content, Html},
             {funs,    ""}],
 
