@@ -11,11 +11,9 @@ Erlang R13B04 or greater
 Building
 ========
 
-`git clone git://github.com/dreverri/erldocs.git
-
-cd erldocs
-
-make`
+        git clone git://github.com/dreverri/erldocs.git
+        cd erldocs
+        make
 
 Usage
 =====
