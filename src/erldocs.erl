@@ -451,7 +451,7 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 -spec read_xml(list(), list()) -> tuple().
 read_xml(Conf, XmlFile) ->
 
-    Opts  = [{fetch_path, [kf(root, Conf) ++ "/priv/dtd/"]},
+    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
              {encoding,   "latin1"}],
 
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
