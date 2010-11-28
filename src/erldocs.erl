@@ -449,7 +449,7 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 %% @doc parse xml file against otp's dtd, need to cd into the
 %% source directory because files are addressed relative to it
 -spec read_xml(list(), list()) -> tuple().
-read_xml(Conf, XmlFile) ->
+read_xml(_Conf, XmlFile) ->
 
     Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
              {encoding,   "latin1"}],
