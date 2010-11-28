@@ -3,41 +3,40 @@
 
   <head>
     <meta charset="latin1" />
-    <title>#TITLE# - erldocs.com (Erlang Documentation)</title>
-    <link type="text/css" rel="stylesheet" href="#BASE#erldocs.css" />
+    <title>{{ title }} - erldocs.com (Erlang Documentation)</title>
+    <link type="text/css" rel="stylesheet" href="{{ base }}erldocs.css" />
   </head>
-  
   <body>
 
     <div id="sidebar" class="inactive">
-      <input type="text" id="search" autocomplete="off" 
+      <input type="text" id="search" autocomplete="off"
              placeholder="press TAB to search" />
       <ul id="results"> </ul>
     </div>
 
     <div id="content">
       <div style="margin:0px; padding:10px 20px;">
-        #CONTENT#
+        {{ content }}
       </div>
       <div id="funwrapper">
         <a id="viewfuns">View Functions</a>
-        #FUNS#
+        {{ funs }}
       </div>
     </div>
 
     <script type="text/javascript">
-      var CURRENT_ROOT = "#BASE#";
+      var CURRENT_ROOT = "{{ base }}";
     </script>
 
-    <script type="text/javascript" src="#BASE#jquery.js"></script>
-    <script type="text/javascript" src="#BASE#erldocs_index.js"></script>
-    <script type="text/javascript" src="#BASE#erldocs.js"></script>
+    <script type="text/javascript" src="{{ base }}jquery.js"></script>
+    <script type="text/javascript" src="{{ base }}erldocs_index.js"></script>
+    <script type="text/javascript" src="{{ base }}erldocs.js"></script>
 
     <script type="text/javascript">
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-59760-14']);
       _gaq.push(['_trackPageview']);
-      
+
       (function() {
         var ga = document.createElement('script');
         ga.src = ('https:' == document.location.protocol ?
