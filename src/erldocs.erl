@@ -106,28 +106,29 @@ strip_cos(Index) ->
     [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
 
 ensure_docsrc(AppDir, Conf) ->
-    case lists:keyfind(gen_docsrc, 1, Conf) of
-        false ->
-            case filelib:is_dir(AppDir ++ "/doc/src/") of
-                true  -> filelib:wildcard(AppDir ++ "/doc/src/*.xml");
-                false ->
-                    log("No docs for ~s, attempting to build~n", [bname(AppDir)]),
-                    tmp_cd(AppDir ++ "/doc/src/", fun() -> gen_docsrc(AppDir) end)
-            end;
-        {_, true} ->
-            log("Attempting to build docs for ~s~n", [bname(AppDir)]),
-            tmp_cd(AppDir ++ "/doc/src/", fun() -> gen_docsrc(AppDir) end)
-    end.
+    %% List any doc/src/*.xml files that exist in the source files
+    XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
+    Bnames = [bname(File) || File <- XMLFiles],
 
-gen_docsrc(AppDir) ->
+    %% Generate any missing module XML
+    SrcFiles = [File || File <- filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
+                          filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
+                      not lists:member(bname(File), Bnames)],
+    %% Output XML files to destination folder
+    %% This prevents polluting the source files
+    XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
+    filelib:ensure_dir(XMLDir ++ "/"),
 
+    %% Return the complete list of XML files
+    XMLFiles ++ tmp_cd(XMLDir, fun() -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
+
+
+gen_docsrc(AppDir, SrcFiles, Dest) ->
     Includes = filelib:wildcard(AppDir ++ "/include"),
     Files = [ begin
                   catch docb_gen:module(File, [{includes, Includes}]),
-                  AppDir ++ "/doc/src/" ++ bname(File, ".erl") ++ ".xml"
-              end || File <- filelib:wildcard(AppDir ++ "/*.erl") ++
-                         filelib:wildcard(AppDir ++ "/src/*.erl")],
-
+                  filename:join([Dest, bname(File, ".erl")]) ++ ".xml"
+              end || File <- SrcFiles],
     [ File || File <- Files, File =/= ignore ].
 
 
