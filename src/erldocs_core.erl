@@ -39,16 +39,15 @@ build(Conf) ->
     ok = copy_static_files(Conf).
 
 build_apps(Conf, App, Index) ->
-    Files   = ensure_docsrc(App, Conf),
     AppName = bname(App),
-    log("Building ~s (~p files)~n", [AppName, length(Files)]),
+    log("Building ~s~n", [AppName]),
+    Files   = ensure_docsrc(App, Conf),
     Map = fun (F) -> build_file_map(Conf, AppName, F) end,
     [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map(Conf, AppName, File) ->
-
-    log("  + ~p~n", [bname(File)]),
+    log("Generating HTML - ~s~n", [bname(File, ".xml")]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
     case lists:member(Type, buildable()) of
@@ -108,12 +107,16 @@ ensure_docsrc(AppDir, Conf) ->
 
 gen_docsrc(AppDir, SrcFiles, Dest) ->
     Includes = filelib:wildcard(AppDir ++ "/include"),
-    Files = [ begin
-                  catch docb_gen:module(File, [{includes, Includes}]),
-                  filename:join([Dest, bname(File, ".erl")]) ++ ".xml"
-              end || File <- SrcFiles],
-    [ File || File <- Files, File =/= ignore ].
-
+    lists:foldl(fun(File, Acc) ->
+                        log("Generating XML - ~s~n", [bname(File, ".erl")]),
+                        case (catch docb_gen:module(File, [{includes, Includes}])) of
+                            ok ->
+                                [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
+                            Error ->
+                                log("Error generating XML (~p): ~p~n", [File, Error]),
+                                Acc
+                        end
+                end, [], SrcFiles).
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
