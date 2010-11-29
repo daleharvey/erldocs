@@ -3,23 +3,23 @@
 
 %% @doc Called automatically by escript
 -spec main(list()) -> ok.
-main([]) ->
-    main(["docs/erldocs"]);
-
-main([Dest]) ->
-    {ok, CWD} = file:get_cwd(),
-    Conf = [{apps, [CWD]}, {dest, Dest}],
-    run(Conf);
-
 main(Args) ->
-    main(Args, []).
+    parse(Args, []).
 
-main([Dest], Apps) ->
-    Conf = [{apps, Apps}, {dest, Dest}],
+parse([], []) ->
+    Dest = filename:absname("docs/erldocs"),
+    parse([Dest], []);
+
+parse([Dest], []) ->
+    Apps = [cwd()],
+    parse([Dest], Apps);
+
+parse([Dest], Apps) ->
+    Conf = [{apps, Apps}, {dest, filename:absname(Dest)}],
     run(Conf);
 
-main([App|Rest], Apps) ->
-    main(Rest, [App|Apps]).
+parse([App|Rest], Apps) ->
+    parse(Rest, [filename:absname(App)|Apps]).
 
 run(Conf) ->
     try erldocs_core:dispatch(Conf)
@@ -31,3 +31,6 @@ run(Conf) ->
 -spec log(string(), [_]) -> ok.
 log(Str, Args) ->
     io:format(Str, Args).
+
+cwd() ->
+    element(2, file:get_cwd()).
