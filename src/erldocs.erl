@@ -4,12 +4,11 @@
 %% @doc Called automatically by escript
 -spec main(list()) -> ok.
 main([]) ->
-    {ok, CWD} = file:get_cwd(),
-    Conf = [{apps, [CWD]}, {dest, "doc/erldocs"}],
-    run(Conf);
+    main(["docs/erldocs"]);
 
 main([Dest]) ->
-    Conf = [{apps, ["."]}, {dest, Dest}],
+    {ok, CWD} = file:get_cwd(),
+    Conf = [{apps, [CWD]}, {dest, Dest}],
     run(Conf);
 
 main(Args) ->
