@@ -314,7 +314,7 @@ var ErlDocs = (function(index) {
 
     $(document).bind("keypress", function(e) {
 
-        if (e.keyCode === KEY.TAB) {
+        if (e.keyCode === KEY.TAB && !e.metaKey) {
 
             e.preventDefault();
             e.stopPropagation();
