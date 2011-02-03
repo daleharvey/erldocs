@@ -280,7 +280,9 @@ fun_stuff(App, Mod, {func, [], Child}) ->
            (_Else, Acc) -> Acc
         end,
 
-    lists:foldl(F, [], Child).
+    lists:foldl(F, [], Child);
+fun_stuff(_App, _Mod, _Funs) ->
+    [].
 
 make_name(Name) ->
     Tmp = lists:flatten(Name),
