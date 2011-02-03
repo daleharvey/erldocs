@@ -248,6 +248,14 @@ var ErlDocs = (function(index) {
             val = decodeURIComponent(qs.search.replace(/\+/g,  " "));
             $search.val(val);
             filter(val);
+
+            // If a search parameter is specified and hash doesnt already
+            // exist, jump to first match
+            if (document.location.hash === "") {
+                document.location.hash =
+                    $("#results li:first-child a").attr("href").split("#")[1];
+            }
+            
         } else {
             $search.val($search.attr("placeholder"));
             filter();
