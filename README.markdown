@@ -11,9 +11,15 @@ Erlang R13B04 or greater
 Building
 ========
 
-        git clone git://github.com/dreverri/erldocs.git
+        git clone git://github.com/daleharvey/erldocs.git
         cd erldocs
         make
+
+or download 
+
+        https://github.com/daleharvey/erldocs/raw/master/rebar
+
+and place it in your $PATH
 
 Usage
 =====
