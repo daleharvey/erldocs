@@ -15,11 +15,7 @@ Building
         cd erldocs
         make
 
-or download 
-
-        https://github.com/daleharvey/erldocs/raw/master/rebar
-
-and place it in your $PATH
+or download https://github.com/daleharvey/erldocs/raw/master/erldocs and place it in your $PATH
 
 Usage
 =====
