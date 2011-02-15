@@ -268,7 +268,9 @@ fun_stuff(App, Mod, {func, [], Child}) ->
            (_Else, Acc) -> Acc
         end,
 
-    lists:foldl(F, [], Child).
+    lists:foldl(F, [], Child);
+fun_stuff(_App, _Mod, _Funs) ->
+    [].
 
 make_name(Name) ->
     Tmp = lists:flatten(Name),
@@ -359,6 +361,8 @@ tr_erlref({note, [], Child}, _Acc) ->
     {'div', [{class, "note"}], [{h2, [], ["Note!"]} | Child]};
 tr_erlref({warning, [], Child}, _Acc) ->
     {'div', [{class, "warning"}], [{h2, [], ["Warning!"]} | Child]};
+tr_erlref({name, [], [{ret,[],[Ret]}, {nametext,[],[Desc]}]}, _Acc) ->
+    {pre, [], [Ret ++ " " ++ Desc]};
 tr_erlref({name, [], Child}, [{ids, Ids}, List, {functions, Funs}]) ->
     case make_name(Child) of
         ignore -> ignore;
