@@ -244,7 +244,7 @@ var ErlDocs = (function(index) {
 
         var val, qs = parseQuery(document.location.search);
 
-        if (qs && qs.search) {
+        if (qs && qs.search && $search.val() === "") {
             val = decodeURIComponent(qs.search.replace(/\+/g,  " "));
             $search.val(val);
             filter(val);
@@ -255,9 +255,8 @@ var ErlDocs = (function(index) {
                 document.location.hash =
                     $("#results li:first-child a").attr("href").split("#")[1];
             }
-            
+
         } else {
-            $search.val($search.attr("placeholder"));
             filter();
         }
 
@@ -306,18 +305,12 @@ var ErlDocs = (function(index) {
         $search[0].focus();
         $("#sidebar").removeClass("inactive");
         searchActive = true;
-        if ($search.val() === $search.attr("placeholder")) {
-            $search.val("");
-        }
     });
 
     $search.blur(function () {
         $("#sidebar").addClass("inactive");
         searchActive = false;
         document.body.focus();
-        if ($search.val() ==="" ) {
-            $search.val($search.attr("placeholder"));
-        }
     });
 
     $(document).bind("keypress", function(e) {
