@@ -88,17 +88,20 @@ strip_cos(Index) ->
     [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
 
 ensure_docsrc(AppDir, Conf) ->
-    %% List any doc/src/*.xml files that exist in the source files
-    XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
-    Bnames = [bname(File) || File <- XMLFiles],
 
-    %% Generate any missing module XML
+    % List any doc/src/*.xml files that exist in the source files
+    XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
+    Bnames = [bname(File, ".xml") || File <- XMLFiles],
+
+    % Generate any missing module XML
     SrcFiles = [File || File <- filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
                           filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
-                      not lists:member(bname(File), Bnames)],
-    %% Output XML files to destination folder
-    %% This prevents polluting the source files
+                      not lists:member(bname(File, ".erl"), Bnames)],
+
+    % Output XML files to destination folder
+    % This prevents polluting the source files
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
+
     filelib:ensure_dir(XMLDir ++ "/"),
 
     %% Return the complete list of XML files
