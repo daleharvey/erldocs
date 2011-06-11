@@ -1,9 +1,9 @@
-* {  
+* {
     padding : 0px;
     margin  : 0px;
 }
 
-body { 
+body {
     font-family      : verdana, Arial, sans-serif;
     font-size        : 13px;
     font-size-adjust : none;
@@ -25,14 +25,14 @@ p {
     line-height:135%;
 }
 
-h1 {  
+h1 {
     display:inline;
     font-size   : 24px;
     font-weight : bold;
 }
 
-h2 {  
-    margin-top  : 0px; 
+h2 {
+    margin-top  : 0px;
     font-size   : 17px;
     font-weight : normal;
 }
@@ -55,8 +55,8 @@ dd {
     margin-bottom : 8px;
 }
 
-h4 a { 
-    color:black; 
+h4 a {
+    color:black;
 font-weight:bold;
     /* font-size:80%; */
 }
@@ -70,24 +70,24 @@ a:visited {
     text-decoration : none;
 }
 
-ul { 
-    margin : 10px 0px; 
+ul {
+    margin : 10px 0px;
 }
 
-code { 
+code {
     font-family   : "Courier New","Andale Mono",monospace;
     background    : #EEFFCC none repeat scroll 0 0;
     border-bottom : 1px dotted #AADD99;
 }
 
-pre code { 
+pre code {
     background : none;
     border     : none;
 }
 
 pre {
     margin      : 10px 0px;
-    padding     : 5px; 
+    padding     : 5px;
     border-left : 2px solid #ccc;
     background  : #EFEFEF;
     margin-left : 10px;
@@ -98,24 +98,24 @@ pre {
     overflow    : auto;
 }
 
-td { 
-    padding: 5px; 
+td {
+    padding: 5px;
 }
 
-.copystuff { 
+.copystuff {
     padding   : 2px 0px 0px 4px;
     font-size : 10px;
 }
 
-.copystuff a { 
+.copystuff a {
     text-decoration : none;
 }
 
-#content li { 
-    margin : 0px 25px; 
+#content li {
+    margin : 0px 25px;
 }
 
-#content {  
+#content {
     bottom   :0px;
     right    :0px;
     left     :240px;
@@ -143,17 +143,17 @@ h2.modsummary {
     margin-top : 15px;
 }
 
-.function h3 {   
+.function h3 {
     margin-top  : 5px;
     font-size   : 14px;
     font-weight : bold;
 }
 
-.function {  
+.function {
     margin : 25px 0px;
 }
 
-.function p {  
+.function p {
     padding-left : 10px;
 }
 
@@ -162,43 +162,43 @@ h2.modsummary {
     font-weight : bold;
 }
 
-.function ul {  
+.function ul {
     list-style-type : none;
 }
 
-.seealso li {  
+.seealso li {
     float       : left;
     font-style  : normal;
     margin-left : 10px;
 }
 
-.note { 
-    border     : 1px solid #E1E4EA; 
-    padding    : 10px; 
-    margin     : 10px 8%; 
+.note {
+    border     : 1px solid #E1E4EA;
+    padding    : 10px;
+    margin     : 10px 8%;
     background : #EFF3F8;
 }
 
-.note h2 { 
-    font-size   : 14px; 
-    font-weight : bold; 
-    display     : inline; 
+.note h2 {
+    font-size   : 14px;
+    font-weight : bold;
+    display     : inline;
 }
 
-.warning { 
-    border     : 1px solid #E8DFDF; 
-    padding    : 10px; 
-    margin     : 10px 8%; 
+.warning {
+    border     : 1px solid #E8DFDF;
+    padding    : 10px;
+    margin     : 10px 8%;
     background : #FBF4E9;
 }
 
-.warning h2 { 
-    font-size   : 14px; 
-    font-weight : bold;  
-    display     : inline; 
+.warning h2 {
+    font-size   : 14px;
+    font-weight : bold;
+    display     : inline;
 }
 
-#sidebar {  
+#sidebar {
     overflow-y   : hidden;
     overflow-x   : hidden;
     position     : fixed;
@@ -209,11 +209,11 @@ h2.modsummary {
     height       : 100%;
 }
 
-#sidebar.inactive { 
+#sidebar.inactive {
     opacity:0.5;
 }
 
-#search { 
+#search {
     -moz-border-radius    : 5px;
     -webkit-border-radius : 5px;
     display               : block;
@@ -263,8 +263,8 @@ h2.modsummary {
     -webkit-box-shadow : 0px 0px 1px #888;
 }
 
-#results { 
-    clear           : both; 
+#results {
+    clear           : both;
     height          : 100%;
     overflow-y      : scroll;
     overflow-x      : hidden;
@@ -273,7 +273,7 @@ h2.modsummary {
     border-bottom   : 1px solid #999;
 }
 
-#results li a {  
+#results li a {
     display         : block;
     padding         : 3px 0px 3px 5px;
     position        : relative;
@@ -289,13 +289,13 @@ h2.modsummary {
     padding-left : 0px;
 }
 
-#results li:hover {  
+#results li:hover {
     background : #DDD !important;
 }
 
 #results li.selected {
     background : #333 !important;
-    background : -moz-linear-gradient(top, #222222, #333333) !important;  
+    background : -moz-linear-gradient(top, #222222, #333333) !important;
 }
 
 #results li.selected .sub, #results li.selected span {
@@ -303,13 +303,13 @@ h2.modsummary {
     text-shadow     : #000 1px 1px 1px;
 }
 
-.sub {  
+.sub {
     color       : #555;
     font-size   : 10px;
     white-space : nowrap;
 }
 
-#results .dat {  
+#results .dat {
     -moz-border-radius    : 3px;
     -webkit-border-radius : 3px;
     font-size             : 11px;
@@ -323,19 +323,19 @@ h2.modsummary {
     text-align            : center;
 }
 
-#results li.fun {  
+#results li.fun {
     background : #E6FFCC;
 }
 
-#results li.mod {  
+#results li.mod {
     background: #CCE6FF;
 }
 
-#results li.app .dat {  
+#results li.app .dat {
     background : red;
 }
 
-.app .sub {  
+.app .sub {
     position:absolute;
     top:5px;
     right:5px;
@@ -343,11 +343,11 @@ h2.modsummary {
     text-shadow:none;
 }
 
-#sideinfo {  
+#sideinfo {
     position   : absolute;
     top        : 26px;
     width      : 230px;
-    display    : none; 
+    display    : none;
     background : white;
     padding    : 5px;
     height     : 100%;
@@ -355,7 +355,7 @@ h2.modsummary {
     font-size  : 11px;
 }
 
-.info li {  
+.info li {
     margin : 5px 0px 5px 20px;
 }
 
@@ -387,7 +387,7 @@ h2.modsummary {
     font-size : 9px;
 }
 
-#funwrapper { 
+#funwrapper {
     position : fixed;
     top      : 75%;
     left     : 241px;
@@ -396,7 +396,7 @@ h2.modsummary {
     display  : none;
 }
 
-#viewfuns { 
+#viewfuns {
     display             : block;
     text-align          : center;
     width               : 80px;
@@ -416,10 +416,10 @@ h2.modsummary {
     -webkit-border-radius-topright : 4px;
 }
 
-.main { 
-    padding: 10px 20px !important; 
+.main {
+    padding: 10px 20px !important;
     font-family:"Myriad Pro",arial,sans-serif;
-    font-weight:normal; 
+    font-weight:normal;
 }
 
 .main h1 { font-size: 30px; margin-bottom: 8px; line-height:30px;}
@@ -427,14 +427,21 @@ h2.modsummary {
 
 .notes { opacity:0.6; }
 
+.type_desc {
+    margin-left:30px;
+}
+h3 + .type_desc {
+   margin-top:10px;
+}
+
 pre.sh_sourceCode {
     color       : black;
     font-style  : normal;
     font-weight : normal;
 }
 
-pre.sh_sourceCode .sh_keyword { color: blue; font-weight: bold; }           
-pre.sh_sourceCode .sh_type { color: darkgreen; }                            
+pre.sh_sourceCode .sh_keyword { color: blue; font-weight: bold; }
+pre.sh_sourceCode .sh_type { color: darkgreen; }
 pre.sh_sourceCode .sh_usertype { color: teal; }
 pre.sh_sourceCode .sh_string { color: red; font-family: monospace; }
 pre.sh_sourceCode .sh_regexp { color: orange; font-family: monospace; }

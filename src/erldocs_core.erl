@@ -268,6 +268,8 @@ fun_stuff(App, Mod, {func, [], Child}) ->
                     ignore -> Acc;
                     NName  -> [ ["fun", App, Mod++":"++NName, Summary] | Acc ]
                 end;
+           ({name, [{name, Name}, {arity, Arity}], []}, Acc) ->
+                [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
            (_Else, Acc) -> Acc
         end,
 
@@ -279,7 +281,6 @@ make_name(Name) ->
     Tmp = lists:flatten(Name),
     case string:chr(Tmp, 40) of
         0 ->
-            %io:format("wtf ~p~n",[Name]),
             ignore;
         Pos ->
             {Name2, Rest2} = lists:split(Pos-1, Tmp),
@@ -304,6 +305,8 @@ add_html(Link) ->
     end.
 
 %% Transforms erlang xml format to html
+tr_erlref({type_desc, [{variable, Name}], [Desc]}, _Acc) ->
+    {'div', [{class, "type_desc"}], [{code, [], [Name, " = ",Desc]}]};
 tr_erlref({header,[],_Child}, _Acc) ->
     ignore;
 tr_erlref({marker, [{id, Marker}], []}, _Acc) ->
@@ -366,6 +369,10 @@ tr_erlref({warning, [], Child}, _Acc) ->
     {'div', [{class, "warning"}], [{h2, [], ["Warning!"]} | Child]};
 tr_erlref({name, [], [{ret,[],[Ret]}, {nametext,[],[Desc]}]}, _Acc) ->
     {pre, [], [Ret ++ " " ++ Desc]};
+tr_erlref({name, [{name, Name}, {arity, N}], []}, [{ids, Ids}, List, {functions, Funs}]) ->
+    NName = inc_name(Name, Ids, 0),
+    { {h3, [{id, Name ++ "/" ++ N}], [Name ++ "/" ++ N]},
+      [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}]};
 tr_erlref({name, [], Child}, [{ids, Ids}, List, {functions, Funs}]) ->
     case make_name(Child) of
         ignore -> ignore;
