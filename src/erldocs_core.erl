@@ -112,7 +112,9 @@ gen_docsrc(AppDir, SrcFiles, Dest) ->
     Includes = filelib:wildcard(AppDir ++ "/include"),
     lists:foldl(fun(File, Acc) ->
                         log("Generating XML - ~s~n", [bname(File, ".erl")]),
-                        case (catch docb_gen:module(File, [{includes, Includes}])) of
+                        case (catch docb_gen:module(
+                                File, [{includes, Includes},
+                                       {sort_functions,false}])) of
                             ok ->
                                 [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
                             Error ->
