@@ -61,7 +61,7 @@ build_file_map(Conf, AppName, File) ->
                        erlref ->
                            {modulesummary, [], Sum}
                                = lists:keyfind(modulesummary,1, Xml),
-                           Sum;
+                           unicode:characters_to_list(Sum);
                        cref ->
                            {libsummary, [], Sum}
                                = lists:keyfind(libsummary, 1, Xml),
@@ -188,11 +188,19 @@ javascript_index(Conf, FIndex) ->
     log("Creating erldocs_index.js ...~n"),
 
     F = fun([Else, App, NMod, Sum]) ->
-                [Else, App, NMod, string:substr(Sum, 1, 50)]
+                [Else, App, NMod, fmt("~ts", [string:substr(Sum, 1, 50)])]
         end,
 
-    Index = lists:sort(fun sort_index/2, lists:map(F, FIndex)),
-    Js    = fmt("var index = ~p;", [Index]),
+    Index = 
+        lists:map(
+              fun([A,B,C,[]]) ->
+                      fmt("['~s','~s','~s',[]]", [A,B,C]);
+                 ([A,B,C,D]) ->
+                      fmt("['~s','~s','~s','~s']", [A,B,C,D])
+              end, 
+              lists:sort(fun sort_index/2, lists:map(F, FIndex))),
+    
+    Js    = fmt("var index = [~s];", [string:join(Index, ",")]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
 
@@ -406,7 +414,7 @@ strip_whitespace(Else) ->
 is_whitespace(X) when is_tuple(X); is_number(X) ->
     true;
 is_whitespace(X) ->
-    nomatch == re:run(X, "^[ \n\t]*$"). %"
+    nomatch == re:run(X, "^[ \n\t]*$", [unicode]). %"
 
 %% rather basic xml to string converter, takes xml of the form
 %% {tag, [{listof, "attributes"}], ["list of children"]}
@@ -416,15 +424,15 @@ xml_to_str(Xml) ->
 
 xml_to_html({Tag, Attr}) ->
     %% primarily for cases such as <a name="">
-    fmt("<~s ~s>", [Tag, atos(Attr)]);
+    fmt("<~ts ~ts>", [Tag, atos(Attr)]);
 xml_to_html({Tag, Attr, []}) ->
-    fmt("<~s ~s />", [Tag, atos(Attr)]);
+    fmt("<~ts ~ts />", [Tag, atos(Attr)]);
 xml_to_html({Tag, [], []}) ->
-    fmt("<~s />", [Tag]);
+    fmt("<~ts />", [Tag]);
 xml_to_html({Tag, [], Child}) ->
-    fmt("<~s>~s</~s>", [Tag, xml_to_html(Child), Tag]);
+    fmt("<~ts>~ts</~ts>", [Tag, xml_to_html(Child), Tag]);
 xml_to_html({Tag, Attr, Child}) ->
-    fmt("<~s ~s>~s</~s>", [Tag, atos(Attr), xml_to_html(Child), Tag]);
+    fmt("<~ts ~ts>~ts</~ts>", [Tag, atos(Attr), xml_to_html(Child), Tag]);
 xml_to_html(List) when is_list(List) ->
     case io_lib:char_list(List) of
         true  -> htmlchars(List);
@@ -452,8 +460,9 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 -spec read_xml(list(), list()) -> tuple().
 read_xml(_Conf, XmlFile) ->
 
-    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
-             {encoding,   "latin1"}],
+%%     Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
+%%              {encoding, "utf-8"}],
+    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]}],
 
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
     xmerl_lib:simplify_element(Xml).
