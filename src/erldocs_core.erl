@@ -5,8 +5,10 @@
 
 -ifdef(DEBUG).
 -define(LOG(Str, Args), io:format(Str, Args)).
+-define(LOG(Str), io:format(Str)).
 -else.
 -define(LOG(_Str, _Args), ok).
+-define(LOG(_Str), ok).
 -endif.
 
 %% @doc Copy static files
@@ -481,7 +483,7 @@ fmt(Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
 log(Str) ->
-    io:format(Str).
+    ?LOG(Str).
 log(Str, Args) ->
     ?LOG(Str, Args).
 
