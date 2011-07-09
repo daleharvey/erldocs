@@ -3,6 +3,12 @@
 -export([mapreduce/4, pmapreduce/4, pmapreduce/5]).
 -include_lib("kernel/include/file.hrl").
 
+-ifdef(DEBUG).
+-define(LOG(Str, Args), io:format(Str, Args)).
+-else.
+-define(LOG(_Str, _Args), ok).
+-endif.
+
 %% @doc Copy static files
 -spec copy_static_files(list()) -> ok.
 copy_static_files(Conf) ->
@@ -477,7 +483,7 @@ fmt(Format, Args) ->
 log(Str) ->
     io:format(Str).
 log(Str, Args) ->
-    io:format(Str, Args).
+    ?LOG(Str, Args).
 
 %% @doc shorthand for lists:keyfind
 -spec kf(term(), list()) -> term().
