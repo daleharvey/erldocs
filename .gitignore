@@ -5,3 +5,5 @@ deps
 ebin
 priv/www
 !/priv/www/index.html
+/.settings
+/.project
