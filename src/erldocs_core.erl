@@ -188,6 +188,9 @@ index_ordering([Type, App, Mod, _Sum]) ->
 sort_index(A, B) ->
     index_ordering(A) =< index_ordering(B).
 
+html_encode(Str) ->
+    re:replace(Str, "'", "", [{return, list}, global]).
+
 javascript_index(Conf, FIndex) ->
 
     log("Creating erldocs_index.js ...~n"),
@@ -201,12 +204,12 @@ javascript_index(Conf, FIndex) ->
               fun([A,B,C,[]]) ->
                       fmt("['~s','~s','~s',[]]", [A,B,C]);
                  ([A,B,C,D]) ->
-                      fmt("['~s','~s','~s','~s']", [A,B,C,D])
+                      fmt("['~s','~s','~s','~s']", [A,B,C,html_encode(D)])
               end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
-    Js    = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
-                       "\\n|\\r", "", [{return,list}]),
+    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
+                    "\\n|\\r", "", [{return,list}, global]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
 
