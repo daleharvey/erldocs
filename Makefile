@@ -1,6 +1,6 @@
 .PHONY: deps
 
-all: deps
+all:
 	./rebar compile escriptize
 
 deps:
