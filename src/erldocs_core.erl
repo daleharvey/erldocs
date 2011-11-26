@@ -97,9 +97,10 @@ ensure_docsrc(AppDir, Conf) ->
     Bnames = [bname(File, ".xml") || File <- XMLFiles],
 
     % Generate any missing module XML
-    SrcFiles = [File || File <- filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
-                          filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
-                      not lists:member(bname(File, ".erl"), Bnames)],
+    SrcFiles = [filename:absname(File)
+                || File <- filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
+                       filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
+                   not lists:member(bname(File, ".erl"), Bnames)],
 
     % Output XML files to destination folder
     % This prevents polluting the source files
@@ -112,19 +113,19 @@ ensure_docsrc(AppDir, Conf) ->
 
 
 gen_docsrc(AppDir, SrcFiles, Dest) ->
-    Includes = filelib:wildcard(AppDir ++ "/include"),
+    Opts = [{includes, filelib:wildcard(AppDir ++ "/include")},
+            {sort_functions,false}],
+
     lists:foldl(fun(File, Acc) ->
-                        log("Generating XML - ~s~n", [bname(File, ".erl")]),
-                        case (catch docb_gen:module(
-                                File, [{includes, Includes},
-                                       {sort_functions,false}])) of
-                            ok ->
-                                [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
-                            Error ->
-                                log("Error generating XML (~p): ~p~n", [File, Error]),
-                                Acc
-                        end
-                end, [], SrcFiles).
+      log("Generating XML - ~s~n", [bname(File, ".erl")]),
+      case (catch docb_gen:module(File, Opts)) of
+          ok ->
+              [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
+          Error ->
+              log("Error generating XML (~p): ~p~n", [File, Error]),
+              Acc
+      end
+    end, [], SrcFiles).
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
