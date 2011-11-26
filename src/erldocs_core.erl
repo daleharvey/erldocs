@@ -3,13 +3,8 @@
 -export([mapreduce/4, pmapreduce/4, pmapreduce/5]).
 -include_lib("kernel/include/file.hrl").
 
--ifdef(DEBUG).
 -define(LOG(Str, Args), io:format(Str, Args)).
 -define(LOG(Str), io:format(Str)).
--else.
--define(LOG(_Str, _Args), ok).
--define(LOG(_Str), ok).
--endif.
 
 %% @doc Copy static files
 -spec copy_static_files(list()) -> ok.
@@ -201,16 +196,16 @@ javascript_index(Conf, FIndex) ->
                 [Else, App, NMod, fmt("~ts", [string:substr(Sum, 1, 50)])]
         end,
 
-    Index = 
+    Index =
         lists:map(
               fun([A,B,C,[]]) ->
                       fmt("['~s','~s','~s',[]]", [A,B,C]);
                  ([A,B,C,D]) ->
                       fmt("['~s','~s','~s','~s']", [A,B,C,D])
-              end, 
+              end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
-    
-    Js    = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]), 
+
+    Js    = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
                        "\\n|\\r", "", [{return,list}]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
