@@ -1,25 +1,26 @@
 -module(erldocs).
 -export([main/1]).
 
+-record(conf, {dirs = [], destination = cwd() ++ "/docs/erldocs"}).
+
 %% @doc Called automatically by escript
 -spec main(list()) -> ok.
 main(Args) ->
-    parse(Args, []).
+    parse(Args, #conf{}).
 
-parse([], []) ->
-    Dest = filename:absname("docs/erldocs"),
-    parse([Dest], []);
+parse([], #conf{destination = Destination} = Conf) ->
+    Dirs = case Conf#conf.dirs of
+      [] -> [cwd()];
+      Else -> Else
+    end,
+    run([{apps, Dirs}, {dest, filename:absname(Destination)}]);
 
-parse([Dest], []) ->
-    Apps = [cwd()],
-    parse([Dest], Apps);
+parse(["-o", Dest | Rest], Conf) ->
+    parse(Rest, Conf#conf{destination=Dest});
 
-parse([Dest], Apps) ->
-    Conf = [{apps, Apps}, {dest, filename:absname(Dest)}],
-    run(Conf);
+parse([Dir | Rest], #conf{dirs = Dirs} = Conf) ->
+    parse(Rest, Conf#conf{dirs = [Dir | Dirs]}).
 
-parse([App|Rest], Apps) ->
-    parse(Rest, [filename:absname(App)|Apps]).
 
 run(Conf) ->
     try erldocs_core:dispatch(Conf)
