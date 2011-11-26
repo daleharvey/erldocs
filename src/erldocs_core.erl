@@ -94,19 +94,25 @@ ensure_docsrc(AppDir, Conf) ->
 
     % List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
-    Bnames = [bname(File, ".xml") || File <- XMLFiles],
+    HandWritten = [bname(File, ".xml") || File <- XMLFiles],
+
+    ErlFiles = filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
+        filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
 
     % Generate any missing module XML
-    SrcFiles = [filename:absname(File)
-                || File <- filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
-                       filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
-                   not lists:member(bname(File, ".erl"), Bnames)],
+    SrcFiles = [filename:absname(File) ||
+                   File <- ErlFiles,
+                   not lists:member(bname(File, ".erl"), HandWritten)],
 
     % Output XML files to destination folder
     % This prevents polluting the source files
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
-
     filelib:ensure_dir(XMLDir ++ "/"),
+
+    [ begin
+          log("Generating Type Specs for: ~s~n", [File]),
+          os:cmd("./priv/bin/specs_gen.escript -o.xml/ " ++ File)
+      end || File <- ErlFiles],
 
     %% Return the complete list of XML files
     XMLFiles ++ tmp_cd(XMLDir, fun() -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
