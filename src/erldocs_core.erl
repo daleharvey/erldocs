@@ -511,9 +511,9 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 -spec read_xml(list(), list()) -> tuple().
 read_xml(_Conf, XmlFile) ->
 
-%%     Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
-%%              {encoding, "utf-8"}],
-    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]}],
+    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
+             {encoding, "latin1"}],
+    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]}],
 
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
     xmerl_lib:simplify_element(Xml).

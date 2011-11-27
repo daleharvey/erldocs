@@ -2,7 +2,7 @@
 <html lang="en">
 
   <head>
-    <meta charset="utf-8" />
+    <meta charset="latin1" />
     <title>{{ title }} - erldocs.com (Erlang Documentation)</title>
     <link rel="search" type="application/opensearchdescription+xml"
           title="erldocs" href="/search.xml">
