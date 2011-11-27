@@ -53,6 +53,12 @@ build_file_map(Conf, AppName, File) ->
     log("Generating HTML - ~s~n", [bname(File, ".xml")]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
+    TypeSpecsFile = filename:join([dest(Conf), ".xml", "specs_" ++ bname(File)]),
+    TypeSpecs = case read_xml(Conf, TypeSpecsFile) of
+        {error, _, _} -> [];
+        {module, _, Specs} -> strip_whitespace(Specs)
+    end,
+
     case lists:member(Type, buildable()) of
         false -> [];
         true  ->
@@ -76,7 +82,7 @@ build_file_map(Conf, AppName, File) ->
             % strip silly shy characters
             Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
 
-            ok = render(Type, AppName, Module, Content, Conf),
+            ok = render(Type, AppName, Module, Content, TypeSpecs, Conf),
 
             case lists:member({AppName, Module}, ignore()) of
                 true -> [];
@@ -109,9 +115,11 @@ ensure_docsrc(AppDir, Conf) ->
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
     filelib:ensure_dir(XMLDir ++ "/"),
 
+    SpecsDest = filename:join([dest(Conf), ".xml"]),
+
     [ begin
-          log("Generating Type Specs for: ~s~n", [File]),
-          os:cmd("./priv/bin/specs_gen.escript -o.xml/ " ++ File)
+          log("Generating Type Specs - ~s~n", [File]),
+          os:cmd("./priv/bin/specs_gen.escript -o" ++ SpecsDest ++ " " ++ File)
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
@@ -220,17 +228,17 @@ javascript_index(Conf, FIndex) ->
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
 
-render(cref, App, Mod, Xml, Conf) ->
-    render(erlref, App, Mod, Xml, Conf);
+render(cref, App, Mod, Xml, Types, Conf) ->
+    render(erlref, App, Mod, Xml, Types, Conf);
 
-render(erlref, App, Mod, Xml, Conf) ->
+render(erlref, App, Mod, Xml, Types, Conf) ->
 
     File = filename:join([dest(Conf), App, Mod ++ ".html"]),
     ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
 
-    Acc = [{ids,[]}, {list, ul}, {functions, []}],
+    Acc = [{ids,[]}, {list, ul}, {functions, []}, {types, Types}],
 
-    {[_Id, _List, {functions, Funs}], NXml}
+    {[_Id, _List, {functions, Funs}, {types, _}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
 
     XmlFuns = [{li, [], [{a, [{href, "#"++X}], [X]}]}
@@ -393,22 +401,49 @@ tr_erlref({warning, [], Child}, _Acc) ->
     {'div', [{class, "warning"}], [{h2, [], ["Warning!"]} | Child]};
 tr_erlref({name, [], [{ret,[],[Ret]}, {nametext,[],[Desc]}]}, _Acc) ->
     {pre, [], [Ret ++ " " ++ Desc]};
-tr_erlref({name, [{name, Name}, {arity, N}], []}, [{ids, Ids}, List, {functions, Funs}]) ->
+tr_erlref({name, [{name, Name}, {arity, N}], []}, Acc) ->
+    [{ids, Ids}, List, {functions, Funs}, {types, Types}] = Acc,
+    PName = case find_spec(Name, N, Types) of
+        {ok, Tmp} -> Tmp;
+        _ -> Name ++ "/" ++ N
+    end,
     NName = inc_name(Name, Ids, 0),
-    { {h3, [{id, Name ++ "/" ++ N}], [Name ++ "/" ++ N]},
-      [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}]};
-tr_erlref({name, [], Child}, [{ids, Ids}, List, {functions, Funs}]) ->
+    { {h3, [{id, Name ++ "/" ++ N}], [PName]},
+      [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}, {types, Types}]};
+tr_erlref({name, [], Child}, [{ids, Ids}, List, {functions, Funs}, {types, Types}]) ->
     case make_name(Child) of
         ignore -> ignore;
         Name   ->
             NName = inc_name(Name, Ids, 0),
             { {h3, [{id, NName}], [Child]},
-              [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}]}
+              [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}, {types, Types}]}
     end;
 tr_erlref({fsummary, [], _Child}, _Acc) ->
     ignore;
 tr_erlref(Else, _Acc) ->
     Else.
+
+find_spec(_Name, _Arity, []) ->
+    spec_not_found;
+
+find_spec(Name, Arity, [{spec, [], Specs} | Rest]) ->
+    {name, _, [SpecName]} = lists:keyfind(name, 1, Specs),
+    {arity, _, [ArityName]} = lists:keyfind(arity, 1, Specs),
+    case SpecName =:= Name andalso ArityName =:= Arity of
+        true ->
+            {contract, _, Contracts} = lists:keyfind(contract, 1, Specs),
+            {clause, _, Clause} = lists:keyfind(clause, 1, Contracts),
+            {head, _, Head} = lists:keyfind(head, 1, Clause),
+            case io_lib:deep_char_list(Head) of
+                true -> {ok, lists:flatten(Head)};
+                false -> invalid_name
+            end;
+        false ->
+            find_spec(Name, Arity, Rest)
+    end;
+find_spec(Name, Arity, [_ | Rest]) ->
+    find_spec(Name, Arity, Rest).
+
 
 nname(Name, 0)   -> Name;
 nname(Name, Acc) -> Name ++ "-" ++ integer_to_list(Acc).
