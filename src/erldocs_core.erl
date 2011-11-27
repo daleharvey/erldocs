@@ -119,7 +119,8 @@ ensure_docsrc(AppDir, Conf) ->
 
     [ begin
           log("Generating Type Specs - ~s~n", [File]),
-          os:cmd("./priv/bin/specs_gen.escript -o" ++ SpecsDest ++ " " ++ File)
+          Args = "-I" ++ AppDir ++ "/include -o" ++ SpecsDest ++ " " ++ File,
+          os:cmd("./priv/bin/specs_gen.escript " ++ Args)
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
