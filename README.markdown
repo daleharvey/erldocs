@@ -24,14 +24,10 @@ Calling the erldocs script with no arguments will generate documentation for the
 
 `./erldocs`
 
-Calling erldocs with one argument will changes the output directory to the one specified in the argument.
+Additional arguments can specify the location to source files to be documented
 
-`./erldocs docs/alternate_location`
+`./erldocs path/to/erlang/otp/lib/* path/to/erlang/erts`
 
-Calling erldocs with multiple arguments changes both the destination of the generated documentation and the source of the documentation.
+You can specify the output directory with the `-o` flag
 
-`./erldocs path/to/erlang/otp/lib/edoc doc/edoc_docs`
-
-Source arguments can use wildcards.
-
-`./erldocs path/to/erlang/otp/lib/* doc/otp_docs`
+`./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts`
