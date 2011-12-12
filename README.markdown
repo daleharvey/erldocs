@@ -13,6 +13,7 @@ Building
 
         git clone git://github.com/daleharvey/erldocs.git
         cd erldocs
+        ./rebar get-deps
         make
 
 or download [https://github.com/daleharvey/erldocs/raw/master/erldocs](https://github.com/daleharvey/erldocs/raw/master/erldocs) and place it in your $PATH
@@ -20,7 +21,7 @@ or download [https://github.com/daleharvey/erldocs/raw/master/erldocs](https://g
 Usage
 =====
 
-Calling the erldocs script with no arguments will generate documentation for the application in the current working. The documentation will be output to "doc/erldocs".
+Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
 
 `./erldocs`
 
