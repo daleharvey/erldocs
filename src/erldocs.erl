@@ -34,4 +34,5 @@ log(Str, Args) ->
     io:format(Str, Args).
 
 cwd() ->
-    element(2, file:get_cwd()).
+    {ok, Cwd} = file:get_cwd(),
+    Cwd.

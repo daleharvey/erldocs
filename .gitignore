@@ -1,9 +1,10 @@
 .eunit
 deps
-*.o
-*.beam
 ebin
+
+rebar
+erldocs
+
 priv/www
 !/priv/www/index.html
-/.settings
-/.project
+

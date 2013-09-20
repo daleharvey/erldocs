@@ -1,13 +1,24 @@
-.PHONY: deps
+all: compile
+.PHONY: all
 
-all:
-	./rebar compile escriptize
+compile: rebar
+	./rebar get-deps compile escriptize
+.PHONY: compile
 
-deps:
-	./rebar get-deps
-
-clean:
-	@./rebar clean
+clean: rebar
+	./rebar clean
+.PHONY: clean
 
 distclean: clean
-	@rm -rf erldocs deps
+	rm -rf ebin deps rebar erldocs
+.PHONY: distclean
+
+test: compile
+	./rebar skip_deps=true eunit
+.PHONY: test check
+
+rebar:
+	git clone git://github.com/rebar/rebar.git rebar.d
+	cd rebar.d && ./bootstrap
+	mv rebar.d/rebar $@
+	rm -rf ./rebar.d
