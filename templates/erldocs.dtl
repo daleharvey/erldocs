@@ -2,17 +2,15 @@
 <html lang="en">
 
   <head>
-    <meta charset="latin1" />
+    <meta charset="utf-8"/>
     <title>{{ title }} - erldocs.com (Erlang Documentation)</title>
-    <link rel="search" type="application/opensearchdescription+xml"
-          title="erldocs" href="/search.xml">
-    <link type="text/css" rel="stylesheet" href="{{ base }}erldocs.css" />
+    <link rel="search" type="application/opensearchdescription+xml" title="erldocs" href="/search.xml"/>
+    <link type="text/css" rel="stylesheet" href="{{ base }}erldocs.css"/>
   </head>
-  <body>
 
+  <body>
     <div id="sidebar" class="inactive">
-      <input type="text" id="search" autocomplete="off"
-             placeholder="press TAB to search" />
+      <input type="text" id="search" autocomplete="off" placeholder="press TAB to search"/>
       <ul id="results"> </ul>
     </div>
 
@@ -41,13 +39,10 @@
 
       (function() {
         var ga = document.createElement('script');
-        ga.src = ('https:' == document.location.protocol ?
-          'https://ssl' : 'http://www') +
-          '.google-analytics.com/ga.js';
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
         ga.setAttribute('async', 'true');
         document.documentElement.firstChild.appendChild(ga);
       })();
     </script>
   </body>
 </html>
-

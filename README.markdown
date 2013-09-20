@@ -11,24 +11,21 @@ Erlang R13B04 or greater
 Building
 ========
 
-        git clone git://github.com/daleharvey/erldocs.git
-        cd erldocs
-        ./rebar get-deps
-        make
-
-or download [https://github.com/daleharvey/erldocs/raw/master/erldocs](https://github.com/daleharvey/erldocs/raw/master/erldocs) and place it in your $PATH
+    git clone git://github.com/daleharvey/erldocs.git
+    cd erldocs
+    make
 
 Usage
 =====
 
 Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
 
-`./erldocs`
+    ./erldocs
 
 Additional arguments can specify the location to source files to be documented
 
-`./erldocs path/to/erlang/otp/lib/* path/to/erlang/erts`
+    ./erldocs path/to/erlang/otp/lib/* path/to/erlang/erts
 
 You can specify the output directory with the `-o` flag
 
-`./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts`
+    ./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts
