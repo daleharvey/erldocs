@@ -6,7 +6,7 @@ This is the code used to generate documentation for erlang projects in the forma
 Dependencies
 ============
 
-Erlang R13B04 or greater
+Erlang/OTP ≥ R13B04 < R16B
 
 Building
 ========
