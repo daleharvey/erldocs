@@ -227,7 +227,7 @@ javascript_index(Conf, FIndex) ->
               end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
-    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",\n")]),
+    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
                     "\\n|\\r", "", [{return,list}, global]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
