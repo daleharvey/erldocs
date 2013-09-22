@@ -70,7 +70,8 @@ build_file_map(Conf, AppName, File) ->
                        erlref ->
                            {modulesummary, [], Sum}
                                = lists:keyfind(modulesummary,1, Xml),
-                           unicode:characters_to_list(Sum);
+                            unicode:characters_to_list(
+                                lists:filter(fun (X) -> not is_tuple(X) end, Sum));
                        cref ->
                            {libsummary, [], Sum}
                                = lists:keyfind(libsummary, 1, Xml),
@@ -226,7 +227,7 @@ javascript_index(Conf, FIndex) ->
               end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
-    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
+    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",\n")]),
                     "\\n|\\r", "", [{return,list}, global]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
