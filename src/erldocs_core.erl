@@ -205,7 +205,7 @@ sort_index(A, B) ->
     index_ordering(A) =< index_ordering(B).
 
 html_encode (Str) ->
-    http_uri:encode(Str).
+    re:replace(Str, "'", "", [{return, list}, global]).
 
 javascript_index(Conf, FIndex) ->
 
