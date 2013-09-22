@@ -218,9 +218,11 @@ javascript_index(Conf, FIndex) ->
     Index =
         lists:map(
               fun([A,B,C,[]]) ->
-                      fmt("['~s','~s','~s',[]]", [A,B,C]);
+                      fmt("['~s','~s','~s',[]]",
+                        [html_encode(A),html_encode(B),html_encode(C)]);
                  ([A,B,C,D]) ->
-                      fmt("['~s','~s','~s','~s']", [A,B,C,html_encode(D)])
+                      fmt("['~s','~s','~s','~s']",
+                        [html_encode(A),html_encode(B),html_encode(C),html_encode(D)])
               end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
