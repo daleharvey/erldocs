@@ -204,8 +204,8 @@ index_ordering([Type, App, Mod, _Sum]) ->
 sort_index(A, B) ->
     index_ordering(A) =< index_ordering(B).
 
-html_encode(Str) ->
-    re:replace(Str, "'", "", [{return, list}, global]).
+html_encode (Str) ->
+    http_uri:encode(Str).
 
 javascript_index(Conf, FIndex) ->
 
