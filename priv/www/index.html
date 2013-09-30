@@ -1,148 +1,141 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <title>erldocs.com - Alternative Erlang Documentation</title>
-    
-    <link type="text/css" rel="stylesheet" href="./R14B01/erldocs.css" />    
-    <link rel="search" type="application/opensearchdescription+xml"
-          title="erldocs" href="/search.xml">
+    <link href="./R16B02/erldocs.css" type="text/css" rel="stylesheet"/>
+    <link href="search.xml" rel="search" type="application/opensearchdescription+xml" title="erldocs"/>
     <style type="text/css">
     </style>
+
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_require', 'inpage_linkid', '//www.google-analytics.com/plugins/ga/inpage_linkid.js']);
+      _gaq.push(['_setAccount', 'UA-44246018-1']);
+      _gaq.push(['_setDomainName', 'erldocs.com']);
+      _gaq.push(['_trackPageview']);
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
   </head>
-  
+
   <body>
-    
+
     <div id="sidebar" class="inactive">
-      <input type="text" id="search" autocomplete="off" 
-             placeholder="press TAB to search" />
+      <input type="text" id="search" autocomplete="off" placeholder="press TAB to search"/>
       <ul id="results"> </ul>
     </div>
 
-    <div id="content" class="main"> 
-      
+    <div id="content" class="main" style="bottom: 0px;">
+
       <h1>erldocs.com</h1>
-      
-      <p>Welcome, erldocs is an alternative to the 
-        <a href="http://erlang.org/doc/" target="blank">
-          official erlang documentation</a>. The code to generate the 
-        documentation can all be found on 
-        <a href="http://github.com/daleharvey/erldocs" target="blank">
-          github</a>, and if you have any bugs to report, please chuck them in 
-      <a href="http://github.com/daleharvey/erldocs/issues" target="blank">
+
+      <p>Welcome, erldocs is an alternative to the
+        <a href="//erlang.org/doc/" target="blank">
+          official erlang documentation</a>. The code to generate the
+        documentation can all be found on
+        <a href="//github.com/fenollp/erldocs" target="blank">
+          github</a>, and if you have any bugs to report, please chuck them in
+      <a href="//github.com/fenollp/erldocs/issues" target="blank">
         issues</a>.</p>
-    
-      <!--<p>If you are looking for more erlang resources, please checkout 
-        <a href="http://erlangotp.com" target="blank">erlangotp.com</a>.
+
+      <!--<p>If you are looking for more erlang resources, please checkout
+        <a href="//erlangotp.com" target="blank">erlangotp.com</a>.
       </p>-->
-      
+
       <h2>Versions</h2>
       <table>
-        <tr>
-          <td><a href="http://erldocs.com/R15B/">
-              <strong>R15B</strong></a></td>
-          <td><a href="http://cloud.github.com/downloads/daleharvey/erldocs/R15B.tar.gz">Download</a></td>
-        <td></td>
-        </tr>        <tr>
-        <tr>
-          <td><a href="http://erldocs.com/R14B04/">
-              <strong>R14B04</strong></a></td>
-          <td><a href="http://cloud.github.com/downloads/daleharvey/erldocs/R14B04.tar.gz">Download</a></td>
-        <td></td>
-        </tr>        <tr>
-          <td><a href="http://erldocs.com/R14B03/">
-              <strong>R14B03</strong></a></td>
-	  <td><a href="http://cloud.github.com/downloads/daleharvey/erldocs/R14B03.tar.gz">Download</a></td>
-        <td></td>
-        </tr>
-        <tr>
-          <td><a href="http://erldocs.com/R14B02/">
-	            <strong>R14B02</strong></a></td>
-	</tr>
-        <tr>
-          <td><a href="http://erldocs.com/R14B01/">
-              <strong>R14B01</strong>
-	          </a> - <a href="http://erldocs.com/R14B01extra/">
-              <strong>(extras *)</strong>
-	        </a> - <a href="http://erldocs.com/R14B01couch/">
-              <strong>(couch *)</strong>
-	        </a></td>
-          <td></td>
-        </tr>
-          <td><a href="http://erldocs.com/R14B/">
-              <strong>R14B</strong>
-         </a> - <a href="http://erldocs.com/R14Bextra/">
-              <strong>(extras *)</strong>
-         </a> - <a href="http://erldocs.com/R14Bcouch/">
-              <strong>(couch *)</strong>
-         </a></td>
-          <td></td>
-        </tr>
-        <tr>
-        <tr>
-          <td><a href="http://erldocs.com/R14A/">
-              <strong>R14A</strong>
-	  </a> - <a href="http://erldocs.com/R14Aextra/">
-              <strong>(extras *)</strong>
-	  </a></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td><a href="http://erldocs.com/R14A/">
-              <strong>R14A</strong>
-	  </a> - <a href="http://erldocs.com/R14Aextra/">
-              <strong>(extras *)</strong>
-	  </a></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td><a href="http://erldocs.com/R13B04/">
-              <strong>R13B04</strong></a></td>
-          <td><a href="http://cloud.github.com/downloads/daleharvey/erldocs/R13B04.tar.gz">Download</a></td>
-        </tr>
-	<tr>
-          <td><a href="http://erldocs.com/R13B03/">
-              <strong>R13B03</strong></a></td>
-          <td><a href="http://cloud.github.com/downloads/daleharvey/erldocs/R13B03.tar.gz">Download</a></td>
-        </tr>
-      </table>      
+        <tbody>
+          <tr>
+            <td><a href="R16B02/"><strong>R16B02</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R16B01/"><strong>R16B01</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R16B/"><strong>R16B</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R15B03/"><strong>R15B03</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R15B02/"><strong>R15B02</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R15B01/"><strong>R15B01</strong></a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R15B/"><strong>R15B</strong></a></td>
+            <td><a href="//cloud.github.com/downloads/daleharvey/erldocs/R15B.tar.gz">Download</a></td>
+            <td></td>
+          </tr><tr>
+          </tr><tr>
+            <td><a href="R14B04/"><strong>R14B04</strong></a></td>
+            <td><a href="//cloud.github.com/downloads/daleharvey/erldocs/R14B04.tar.gz">Download</a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R14B03/"><strong>R14B03</strong></a></td>
+            <td><a href="//cloud.github.com/downloads/daleharvey/erldocs/R14B03.tar.gz">Download</a></td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R14B02/"><strong>R14B02</strong></a></td>
+          </tr><tr>
+            <td><a href="R14B01/"><strong>R14B01</strong></a>
+              - <a href="R14B01extra/"><strong>(extras *)</strong></a>
+              - <a href="R14B01couch/"><strong>(couch *)</strong></a>
+            </td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R14B/"><strong>R14B</strong></a>
+              - <a href="R14Bextra/"><strong>(extras *)</strong></a>
+              - <a href="R14Bcouch/"><strong>(couch *)</strong></a>
+            </td>
+            <td></td>
+          </tr><tr>
+          </tr><tr>
+            <td><a href="R14A/"><strong>R14A</strong></a>
+              - <a href="R14Aextra/"><strong>(extras *)</strong></a>
+            </td>
+            <td></td>
+          </tr><tr>
+            <td><a href="R13B04/"><strong>R13B04</strong></a></td>
+            <td><a href="//cloud.github.com/downloads/daleharvey/erldocs/R13B04.tar.gz">Download</a></td>
+          </tr><tr>
+            <td><a href="R13B03/"><strong>R13B03</strong></a></td>
+            <td><a href="//cloud.github.com/downloads/daleharvey/erldocs/R13B03.tar.gz">Download</a></td>
+          </tr>
+        </tbody>
+      </table>
 
       <h2>Contact</h2>
-      <p>Feel free to contact me at 
-        <a href="mailto:dale@arandomurl.com">dale@arandomurl.com</a> or on twitter 
-        <a href="http://twitter.com/daleharvey" target="blank">@daleharvey</a>.</p>
-      <p>
+      <p>Since the end of September 2013, <a href="//twitter.com/daleharvey" target="blank">  
+      @daleharvey</a> (<a href="mailto:dale@arandomurl.com">email</a>) has handed me the
+      maintenance and porting of this site to GitHub's gh-pages service.
+      I will try and keep the docs up-to-date.
+      </p>
+      <p>Feel free to contact me at
+        <a href="mailto:pierrefenoll@agmail.com">pierrefenoll@agmail.com</a> or on twitter
+        <a href="//twitter.com/radioxid" target="blank">@radioxid</a>.
+      </p>
 
       <div class="notes">
-	<p>* I have included some popular open source libraries in this set of documentation</p>
-	<ul>
-	  <li><a href="http://github.com/mochi/mochiweb">Mochiweb</a></li>
-	  <li><a href="http://github.com/joearms/elib1">Joe Armstrongs elib</a></li>
-	</ul>
+        <p>* Some popular open source libraries are included in this set of documentation</p>
+        <ul>
+          <li><a href="//github.com/mochi/mochiweb">Mochiweb</a></li>
+          <li><a href="//github.com/joearms/elib1">Joe Armstrong's elib</a></li>
+        </ul>
       </div>
-    </div>    
-    
-</div>
 
-    <script> var CURRENT_ROOT = "./R15B/";</script>
-    <script src="./R15B/jquery.js"></script>
-    <script src="./R15B/erldocs_index.js"></script>
-    <script src="./R15B/erldocs.js"></script>
-    
-    <script type="text/javascript">
-var _gaq = _gaq || [];
-_gaq.push(['_setAccount', 'UA-59760-14']);
-_gaq.push(['_trackPageview']);
- 
-(function() {
-var ga = document.createElement('script');
-ga.src = ('https:' == document.location.protocol ?
-    'https://ssl' : 'http://www') +
-    '.google-analytics.com/ga.js';
-ga.setAttribute('async', 'true');
-document.documentElement.firstChild.appendChild(ga);
-})();
-    </script>
+    </div>
 
-</body>
+
+    <script> var CURRENT_ROOT = "./R16B02/";</script>
+    <script src="./R16B02/jquery.js"></script>
+    <script src="./R16B02/erldocs_index.js"></script>
+    <script src="./R16B02/erldocs.js"></script>
+
+  </body>
 </html>
