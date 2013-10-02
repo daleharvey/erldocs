@@ -1,22 +1,17 @@
-Erldocs
-=======
+# erldocs
+This is the code used to generate documentation for erlang projects in the format of
+[erldocs.com](http://erldocs.com)
 
-This is the code used to generate documentation for erlang projects in the format of [erldocs.com](http://erldocs.com)
+## Dependencies
+R13B04 ≤ Erlang/OTP < R16B
 
-Dependencies
-============
+## Building
 
-Erlang/OTP ≥ R13B04 < R16B
-
-Building
-========
-
-    git clone git://github.com/daleharvey/erldocs.git
-    cd erldocs
+    git clone git://github.com/fenollp/erldocs.git
+    cd erldocs/
     make
 
-Usage
-=====
+## Usage
 
 Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
 
