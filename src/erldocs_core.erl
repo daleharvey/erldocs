@@ -128,20 +128,28 @@ ensure_docsrc(AppDir, Conf) ->
     XMLFiles ++ tmp_cd(XMLDir, fun() -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
 
 
-gen_docsrc(AppDir, SrcFiles, Dest) ->
-    Opts = [{includes, filelib:wildcard(AppDir ++ "/include")},
-            {sort_functions,false}],
-
-    lists:foldl(fun(File, Acc) ->
-      log("Generating XML - ~s~n", [bname(File, ".erl")]),
-      case (catch docb_gen:module(File, Opts)) of
-          ok ->
-              [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
-          Error ->
-              log("Error generating XML (~p): ~p~n", [File, Error]),
-              Acc
-      end
-    end, [], SrcFiles).
+gen_docsrc (AppDir, SrcFiles, Dest) ->
+    AppDirInclude = AppDir ++ "/include", %% Those ones usually don't work!
+    AppDirIncludes = [AppDirInclude | filelib:wildcard(AppDirInclude)],
+    Opts = [ {sort_functions,false}
+           , {layout, docgen_edoc_xml_cb}
+           , {file_suffix, ".xml"}
+           , {preprocess, true}
+           ],
+    lists:foldl(
+      fun (File, Acc) ->
+              Basename = bname(File, ".erl"),
+              log("Generating XML - ~s~n", [Basename]),
+              AbsInclude = filename:dirname(File) ++ "/../include",
+              Options = [{includes,[AbsInclude|AppDirIncludes]} | Opts],
+              case (catch edoc:file(File, Options)) of
+                  ok ->
+                      [filename:join([Dest,Basename]) ++ ".xml" | Acc];
+                  Error ->
+                      log("Error generating XML (~p): ~p~n", [File, Error]),
+                      Acc
+              end
+      end, [], SrcFiles).
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
@@ -168,7 +176,7 @@ module_index(Conf, Index) ->
 
     log("Creating index.html ...~n"),
 
-    Html = "<h1>Module Index</h1><hr /><br /><div>"
+    Html = "<h1>Module Index</h1><hr/><br/><div>"
         ++ xml_to_str(emit_index(Index))
         ++ "</div>",
 
@@ -514,11 +522,15 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 %% source directory because files are addressed relative to it
 -spec read_xml(list(), list()) -> tuple().
 read_xml(_Conf, XmlFile) ->
-
-    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
-             {encoding, "latin1"}],
-    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]}],
-
+    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
+    %         {encoding, "latin1"}],
+    log("Reading xml for ~p\n", [XmlFile]),
+    DocgenDir = code:priv_dir(erl_docgen),
+    Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
+                          , filename:join(DocgenDir, "dtd_html_entities")
+                          ]}
+           , {encoding, "latin1"}
+           ],
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
     xmerl_lib:simplify_element(Xml).
 
