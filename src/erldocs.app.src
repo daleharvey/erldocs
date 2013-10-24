@@ -1,12 +1,14 @@
-{application, erldocs,
- [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {mod, {erldocs_app, []}},
-  {env, []}
- ]}.
+{ application
+, erldocs
+, [ {description, "Alternative Erlang documentation builder."}
+  , {vsn, "1"}
+  , {modules, [ erldocs
+              , erldocs_core
+              ]}
+  , {registered, []}
+  , {applications, [ kernel
+                   , stdlib
+                   ]}
+  , {env, []}
+  ]
+}.
