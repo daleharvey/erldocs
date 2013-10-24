@@ -3,7 +3,7 @@ This is the code used to generate documentation for erlang projects in the forma
 [erldocs.com](http://erldocs.com)
 
 ## Dependencies
-R13B04 ≤ Erlang/OTP < R16B
+R13B04 ≤ Erlang/OTP
 
 ## Building
 
