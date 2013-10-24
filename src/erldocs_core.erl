@@ -121,8 +121,8 @@ ensure_docsrc (AppDir, Conf) ->
 
     SpecsGenEscript =
         case erlang:system_info(otp_release) of
-            Old when Old < "R15B" -> "./priv/bin/specs_gen__below_R15.escript     ";
-            _ ->                     "./priv/bin/specs_gen__R15_and_above.escript "
+            Old when Old < "R15" -> "./priv/bin/specs_gen__below_R15.escript     ";
+            _ ->                    "./priv/bin/specs_gen__R15_and_above.escript "
         end,
     [ begin
           log("Generating Type Specs - ~s~n", [File]),
