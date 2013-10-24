@@ -51,7 +51,7 @@ build_apps (Conf, App, Index) ->
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map (Conf, AppName, File) ->
-    log("Generating HTML - ~s~n", [bname(File, ".xml")]),
+    log("Generating HTML - ~s ~p\n", [bname(File, ".xml"), File]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
     TypeSpecsFile = filename:join([dest(Conf), ".xml", "specs_" ++ bname(File)]),
@@ -125,7 +125,7 @@ ensure_docsrc (AppDir, Conf) ->
             _ ->                    "./priv/bin/specs_gen__R15_and_above.escript "
         end,
     [ begin
-          log("Generating Type Specs - ~s~n", [File]),
+          log("Generating Type Specs - ~p\n", [File]),
           Args = "-I" ++ AppDir ++ "/include -o" ++ SpecsDest ++ " " ++ File,
           os:cmd(SpecsGenEscript ++ Args)
       end || File <- ErlFiles],
@@ -137,7 +137,7 @@ ensure_docsrc (AppDir, Conf) ->
 gen_docsrc (AppDir, SrcFiles, Dest) ->
     AppDirInclude = AppDir ++ "/include", %% Those ones usually don't work!
     AppDirIncludes = [AppDirInclude | filelib:wildcard(AppDirInclude)],
-    Opts = [ {sort_functions,false}
+    Opts = [ {sort_functions, false}
            , {layout, docgen_edoc_xml_cb}
            , {file_suffix, ".xml"}
            , {preprocess, true}
@@ -146,12 +146,15 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
     lists:foldl(
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
-              log("Generating XML - ~s~n", [Basename]),
+              DestFile = filename:join([Dest,Basename]) ++ ".xml",
+              log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
               AbsInclude = filename:dirname(File) ++ "/../include",
-              Options = [{includes,[AbsInclude|AppDirIncludes]} | Opts],
+              Options = [ {includes, [AbsInclude | AppDirIncludes]}
+                        , {dir, filename:dirname(DestFile)}
+                        | Opts],
               case (catch edoc:file(File, Options)) of
                   ok ->
-                      [filename:join([Dest,Basename]) ++ ".xml" | Acc];
+                      [DestFile | Acc];
                   Error ->
                       log("Error generating XML (~p): ~p~n", [File, Error]),
                       Acc
