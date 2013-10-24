@@ -134,7 +134,11 @@ gen_docsrc(AppDir, SrcFiles, Dest) ->
 
     lists:foldl(fun(File, Acc) ->
       log("Generating XML - ~s~n", [bname(File, ".erl")]),
-      case (catch docb_gen:module(File, Opts)) of
+      case (catch edoc:file(File, [ {layout, docgen_edoc_xml_cb}
+                                  , {file_suffix, ".xml"}
+                                  , {preprocess, true}
+                                  | Opts
+                                  ])) of
           ok ->
               [filename:join([Dest, bname(File, ".erl")]) ++ ".xml"|Acc];
           Error ->
@@ -514,11 +518,15 @@ htmlchars([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
 %% source directory because files are addressed relative to it
 -spec read_xml(list(), list()) -> tuple().
 read_xml(_Conf, XmlFile) ->
-
-    Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
-             {encoding, "latin1"}],
-    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]}],
-
+    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
+    %         {encoding, "latin1"}],
+    log("Reading xml for ~p\n", [XmlFile]),
+    DocgenDir = code:priv_dir(erl_docgen),
+    Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
+                          , filename:join(DocgenDir, "dtd_html_entities")
+                          ]}
+           , {encoding, "latin1"}
+           ],
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
     xmerl_lib:simplify_element(Xml).
 
