@@ -120,9 +120,9 @@ ensure_docsrc (AppDir, Conf) ->
     SpecsDest = filename:join([dest(Conf), ".xml"]),
 
     SpecsGenEscript =
-        case otp_vsn() of
-            Old when Old < 15 -> "./priv/bin/specs_gen__below_R15.escript     ";
-            _ ->                 "./priv/bin/specs_gen__R15_and_above.escript "
+        case erlang:system_info(otp_release) of
+            Old when Old < "R15B" -> "./priv/bin/specs_gen__below_R15.escript     ";
+            _ ->                     "./priv/bin/specs_gen__R15_and_above.escript "
         end,
     [ begin
           log("Generating Type Specs - ~s~n", [File]),
@@ -157,15 +157,6 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
                       Acc
               end
       end, [], SrcFiles).
-
-otp_vsn () ->
-    R = fun (D, U) -> 10 * (D - $0) + U - $0 end,
-    case erlang:system_info(otp_release) of
-        [$R, D,U           ] -> R(D,U)                 + 0.00;
-        [$R, D,U, $A       ] -> R(D,U)                 + 0.01;
-        [$R, D,U, $B       ] -> R(D,U)                 + 0.02;
-        [$R, D,U, $B, DD,UU] -> R(D,U) + R(DD,UU) / 10 + 0.00
-    end.
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
