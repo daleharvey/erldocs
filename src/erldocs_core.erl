@@ -9,12 +9,13 @@
 %% @doc Copy static files
 -spec copy_static_files(list()) -> ok.
 copy_static_files (Conf) ->
+    Dest = dest(Conf),
     {ok, ErlDocsCSS} = erldocs_css_dtl:render([]),
-    edoc_lib:write_file(ErlDocsCSS, dest(Conf), "erldocs.css"),
-    {ok, ErlDocsJS} = erldocs_js_dtl:render([]),
-    edoc_lib:write_file(ErlDocsJS, dest(Conf), "erldocs.js"),
-    {ok, Jquery} = jquery_js_dtl:render([]),
-    edoc_lib:write_file(Jquery, dest(Conf), "jquery.js"),
+    edoc_lib:write_file(ErlDocsCSS, Dest, "erldocs.css"),
+    {ok, ErlDocsJS } =  erldocs_js_dtl:render([]),
+    edoc_lib:write_file(ErlDocsJS,  Dest, "erldocs.js"),
+    {ok, Jquery    } =   jquery_js_dtl:render([]),
+    edoc_lib:write_file(Jquery,     Dest, "jquery.js"),
     ok.
 
 %% @doc Parses arguments passed to script and calls
@@ -34,7 +35,7 @@ dispatch (Conf) ->
 build (Conf) ->
     filelib:ensure_dir(dest(Conf)),
 
-    Fun   = fun(X, Y) -> build_apps(Conf, X, Y) end,
+    Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
     Index = strip_cos(lists:foldl(Fun, [], app_dirs(Conf))),
 
     ok = module_index(Conf, Index),
@@ -118,14 +119,19 @@ ensure_docsrc (AppDir, Conf) ->
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
 
+    SpecsGenEscript =
+        case otp_vsn() of
+            Old when Old < 15 -> "./priv/bin/specs_gen__below_R15.escript     ";
+            _ ->                 "./priv/bin/specs_gen__R15_and_above.escript "
+        end,
     [ begin
           log("Generating Type Specs - ~s~n", [File]),
           Args = "-I" ++ AppDir ++ "/include -o" ++ SpecsDest ++ " " ++ File,
-          os:cmd("./priv/bin/specs_gen.escript " ++ Args)
+          os:cmd(SpecsGenEscript ++ Args)
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
-    XMLFiles ++ tmp_cd(XMLDir, fun() -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
+    XMLFiles ++ tmp_cd(XMLDir, fun () -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
 
 
 gen_docsrc (AppDir, SrcFiles, Dest) ->
@@ -136,6 +142,7 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
            , {file_suffix, ".xml"}
            , {preprocess, true}
            ],
+
     lists:foldl(
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
@@ -150,6 +157,15 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
                       Acc
               end
       end, [], SrcFiles).
+
+otp_vsn () ->
+    R = fun (D, U) -> 10 * (D - $0) + U - $0 end,
+    case erlang:system_info(otp_release) of
+        [$R, D,U           ] -> R(D,U)                 + 0.00;
+        [$R, D,U, $A       ] -> R(D,U)                 + 0.01;
+        [$R, D,U, $B       ] -> R(D,U)                 + 0.02;
+        [$R, D,U, $B, DD,UU] -> R(D,U) + R(DD,UU) / 10 + 0.00
+    end.
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
@@ -220,16 +236,16 @@ javascript_index (Conf, FIndex) ->
 
     log("Creating erldocs_index.js ...~n"),
 
-    F = fun([Else, App, NMod, Sum]) ->
+    F = fun ([Else, App, NMod, Sum]) ->
                 [Else, App, NMod, fmt("~ts", [string:substr(Sum, 1, 50)])]
         end,
 
     Index =
         lists:map(
-              fun([A,B,C,[]]) ->
+              fun ([A,B,C,[]]) ->
                       fmt("['~s','~s','~s',[]]",
                         [html_encode(A),html_encode(B),html_encode(C)]);
-                 ([A,B,C,D]) ->
+                  ([A,B,C,D]) ->
                       fmt("['~s','~s','~s','~s']",
                         [html_encode(A),html_encode(B),html_encode(C),html_encode(D)])
               end,
@@ -269,7 +285,7 @@ render (Fun, List, Acc) when is_list(List) ->
         true  ->
             {Acc, List};
         false ->
-            F = fun(X, {Ac, L}) ->
+            F = fun (X, {Ac, L}) ->
                         {NAcc, NEl} = render(Fun, X, Ac),
                         {NAcc, [NEl | L]}
                 end,
@@ -281,12 +297,12 @@ render (Fun, List, Acc) when is_list(List) ->
 render (Fun, Element, Acc) ->
 
     % this is nasty
-    F = fun(ignore, NAcc) ->
+    F = fun (ignore, NAcc) ->
                 {NAcc, ""};
-           ({NEl, NAttr, NChild}, NAcc) ->
+            ({NEl, NAttr, NChild}, NAcc) ->
                 {NNAcc, NNChild} = render(Fun, NChild, NAcc),
                 {NNAcc, {NEl, NAttr, NNChild}};
-           (Else, NAcc) ->
+            (Else, NAcc) ->
                 {NAcc, Else}
         end,
 
@@ -299,22 +315,22 @@ get_funs (_App, _Mod, false) ->
     [];
 get_funs (App, Mod, {funcs, [], Funs}) ->
     lists:foldl(
-            fun(X, Acc) -> fun_stuff(App, Mod, X) ++ Acc end,
-            [], Funs).
+      fun (X, Acc) -> fun_stuff(App, Mod, X) ++ Acc end,
+      [], Funs).
 
 fun_stuff (App, Mod, {func, [], Child}) ->
 
     {fsummary, [], Xml} = lists:keyfind(fsummary, 1, Child),
     Summary = string:substr(xml_to_str(Xml), 1, 50),
 
-    F = fun({name, [], Name}, Acc) ->
+    F = fun ({name, [], Name}, Acc) ->
                 case make_name(Name) of
                     ignore -> Acc;
                     NName  -> [ ["fun", App, Mod++":"++NName, Summary] | Acc ]
                 end;
-           ({name, [{name, Name}, {arity, Arity}], []}, Acc) ->
+            ({name, [{name, Name}, {arity, Arity}], []}, Acc) ->
                 [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
-           (_Else, Acc) -> Acc
+            (_Else, Acc) -> Acc
         end,
 
     lists:foldl(F, [], Child);
@@ -335,7 +351,7 @@ make_name (Name) ->
     end.
 
 app_dirs (Conf) ->
-    Fun = fun(Path, Acc) ->
+    Fun = fun (Path, Acc) ->
                   Acc ++ [X || X <- filelib:wildcard(Path), filelib:is_dir(X)]
           end,
     lists:foldl(Fun, [], kf(apps, Conf)).
