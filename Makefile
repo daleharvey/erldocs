@@ -10,7 +10,7 @@ clean: rebar
 .PHONY: clean
 
 distclean: clean
-	rm -rf ebin deps rebar erldocs
+	rm -rf ebin/ deps/ erldocs
 .PHONY: distclean
 
 test: compile
