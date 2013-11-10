@@ -13,10 +13,6 @@ distclean: clean
 	rm -rf ebin/ deps/ erldocs
 .PHONY: distclean
 
-test: compile
-	./rebar skip_deps=true eunit
-.PHONY: test check
-
 rebar:
 	git clone git://github.com/rebar/rebar.git rebar.d
 	cd rebar.d && ./bootstrap
