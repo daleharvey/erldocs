@@ -4,12 +4,13 @@ This is the code used to generate documentation for erlang projects in the forma
 
 ## Dependencies
 R13B04 ≤ Erlang/OTP
+You need **rebar** in your `$PATH`
 
 ## Building
 
     git clone git://github.com/fenollp/erldocs.git
     cd erldocs/
-    make
+    rebar get-deps compile
 
 ## Usage
 
