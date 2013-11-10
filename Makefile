@@ -2,7 +2,7 @@ all: compile
 .PHONY: all
 
 compile: rebar
-	./rebar get-deps compile escriptize
+	./rebar get-deps compile
 .PHONY: compile
 
 clean: rebar
