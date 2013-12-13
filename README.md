@@ -25,3 +25,6 @@ Additional arguments can specify the location to source files to be documented
 You can specify the output directory with the `-o` flag
 
     ./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts
+
+## To Do
+* Add include flags in the command-line. (Would allow `-I lib/*/include/*` and fix some erldocs.com 404s)
