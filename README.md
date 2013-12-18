@@ -10,7 +10,7 @@ You need **rebar** in your `$PATH`
 
     git clone git://github.com/fenollp/erldocs.git
     cd erldocs/
-    make escript
+    make
 
 ## Usage
 
