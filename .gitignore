@@ -2,7 +2,7 @@
 deps
 ebin
 
-rebar
+erl.mk
 erldocs
 
 priv/www
