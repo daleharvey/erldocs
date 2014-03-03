@@ -4,7 +4,7 @@ erl.mk:
 	wget -nv -O $@ 'https://raw.github.com/fenollp/erl-mk/master/erl.mk' || rm $@
 
 DEPS = erlydtl
-dep_erlydtl = git://github.com/erlydtl/erlydtl.git master
+dep_erlydtl = git://github.com/erlydtl/erlydtl.git 0.8.2
 
 include erl.mk
 
