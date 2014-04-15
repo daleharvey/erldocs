@@ -1,10 +1,23 @@
+%% See LICENSE for licensing information.
+%% -*- coding: utf-8 -*-
 -module(erldocs_core).
--export([copy_static_files/1, build/1, dispatch/1]).
--export([mapreduce/4, pmapreduce/4, pmapreduce/5]).
+
+%% erldocs_core: utilities for module erldocs.
+
+-export([ copy_static_files/1
+        , build/1
+        , dispatch/1 ]).
+
+-export([ mapreduce/4
+        , pmapreduce/4
+        , pmapreduce/5 ]).
+
 -include_lib("kernel/include/file.hrl").
 
 -define(LOG(Str, Args), io:format(Str, Args)).
--define(LOG(Str), io:format(Str)).
+-define(LOG(Str),       io:format(Str)).
+
+%% API
 
 %% @doc Copy static files
 -spec copy_static_files(list()) -> ok.
@@ -610,3 +623,5 @@ segment (List, _N, 1) ->
 segment (List, N, Segments) ->
     {Front, Back} = lists:split(N, List),
     [Front | segment(Back, N, Segments - 1)].
+
+%% End of Module.

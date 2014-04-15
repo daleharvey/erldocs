@@ -1,14 +1,21 @@
+%% See LICENSE for licensing information.
+%% -*- coding: utf-8 -*-
 -module(erldocs).
--export([main/1]).
+
+%% erldocs: escript rendering edoc docs.
+
+-export([ main/1 ]).
 
 -record(conf, { dirs = []
               , destination = cwd() ++ "/docs/erldocs"
               }).
 
-%% @doc Called automatically by escript
--spec main(list()) -> ok.
+%% API
+
 main (Args) ->
     parse(Args, #conf{}).
+
+%% Internals
 
 parse ([], #conf{destination = Destination} = Conf) ->
     Dirs = case Conf#conf.dirs of
@@ -31,10 +38,11 @@ run (Conf) ->
                 [erlang:get_stacktrace(), {Type, Error}])
     end.
 
--spec log(string(), [_]) -> ok.
 log (Str, Args) ->
     io:format(Str, Args).
 
 cwd () ->
     {ok, Cwd} = file:get_cwd(),
     Cwd.
+
+%% End of Module.
