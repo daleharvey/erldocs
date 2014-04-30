@@ -140,7 +140,11 @@ ensure_docsrc (AppDir, Conf) ->
     [ begin
           log("Generating Type Specs - ~p\n", [File]),
           Args = "-I" ++ AppDir ++ "/include -o" ++ SpecsDest ++ " " ++ File,
-          os:cmd(SpecsGenEscript ++ Args)
+          case os:cmd(SpecsGenEscript ++ Args) of
+              "" -> ok;
+              EError when is_list(EError) ->
+                  log("edoc: \""++ File ++"\"\n"++ EError)
+          end
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
