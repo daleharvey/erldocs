@@ -144,8 +144,8 @@ ensure_docsrc (AppDir, Conf) ->
                  , File ],
           try SpecsGenModule:main(Args)
           catch Module:SpecsGenError ->
-                  log("Error running ~p:\n~p\n~p\n",
-                      [Module, SpecsGenError, erlang:get_stacktrace()])
+                  log("Error generating type specs:\n~p\n~p\n",
+                      [SpecsGenError, erlang:get_stacktrace()])
           end
       end || File <- ErlFiles],
 
