@@ -34,7 +34,7 @@ parse ([Dir | Rest], #conf{dirs = Dirs} = Conf) ->
 run (Conf) ->
     try erldocs_core:dispatch(Conf)
     catch Type:Error ->
-            log("Error running script:~n~p~n~p~n",
+            log("Error running script:\n~p\n~p\n",
                 [erlang:get_stacktrace(), {Type, Error}])
     end.
 

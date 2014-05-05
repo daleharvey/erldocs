@@ -132,20 +132,20 @@ ensure_docsrc (AppDir, Conf) ->
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
 
-    SpecsGenEscript =
+    SpecsGenModule =
         case erlang:system_info(otp_release) of
-            "R"++Old when Old < "15" ->
-                "./priv/bin/specs_gen__below_R15.escript     ";
-            _ ->
-                "./priv/bin/specs_gen__R15_and_above.escript "
+            "R"++Old when Old < "15" -> specs_gen__below_R15;
+            _ ->                        specs_gen__R15_and_above
         end,
     [ begin
           log("Generating Type Specs - ~p\n", [File]),
-          Args = "-I" ++ AppDir ++ "/include -o" ++ SpecsDest ++ " " ++ File,
-          case os:cmd(SpecsGenEscript ++ Args) of
-              "" -> ok;
-              EError when is_list(EError) ->
-                  log("edoc: \""++ File ++"\"\n"++ EError)
+          Args = [ "-I" ++ filename:join(AppDir, "include")
+                 , "-o" ++ SpecsDest
+                 , File ],
+          try SpecsGenModule:main(Args)
+          catch Module:SpecsGenError ->
+                  log("Error running ~p:\n~p\n~p\n",
+                      [Module, SpecsGenError, erlang:get_stacktrace()])
           end
       end || File <- ErlFiles],
 

@@ -1,4 +1,6 @@
-#!/usr/bin/env escript
+-module(specs_gen__below_R15).
+-export([main/1]).
+
 %% -*- erlang -*-
 %% %CopyrightBegin%
 %%
@@ -88,6 +90,7 @@ call_edoc(FileSpec, InclFs, Dir) ->
         rename(Dir, File)
     catch
         _:_ ->
+            throw({?MODULE, "EDoc could not process file", File}),
             io:format("EDoc could not process file '~s'\n", [File]),
             clean_up(Dir),
             halt(3)
@@ -131,6 +134,7 @@ write_text(Text, File, Dir) ->
         {error, R} ->
             R1 = file:format_error(R),
             io:format("could not write file '~s': ~s\n", [File, R1]),
+            throw({?MODULE, "could not write file", File, R1}),
             halt(2)
     end.
 
@@ -144,6 +148,7 @@ rename(Dir, F) ->
         {error, R} ->
             R1 = file:format_error(R),
             io:format("could not rename file '~s': ~s\n", [New, R1]),
+            throw({?MODULE, "could not rename file", New, R1}),
             halt(2)
     end.
 
