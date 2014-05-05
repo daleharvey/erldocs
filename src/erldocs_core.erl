@@ -143,7 +143,7 @@ ensure_docsrc (AppDir, Conf) ->
                  , "-o" ++ SpecsDest
                  , File ],
           try SpecsGenModule:main(Args)
-          catch Module:SpecsGenError ->
+          catch _:SpecsGenError ->
                   log("Error generating type specs:\n~p\n~p\n",
                       [SpecsGenError, erlang:get_stacktrace()])
           end
