@@ -558,8 +558,13 @@ read_xml (_Conf, XmlFile) ->
     Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
                           , filename:join(DocgenDir, "dtd_html_entities") ]}
            , {encoding, "latin1"} ],
-    {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
-    xmerl_lib:simplify_element(Xml).
+    case catch xmerl_scan:file(XmlFile, Opts) of
+        {Xml, _Rest} ->
+            xmerl_lib:simplify_element(Xml);
+        Error ->
+            io:format("Error in read_xml File ~p Erro ~p\n", [XmlFile, Error]),
+            throw({error_in_read_xml, XmlFile, Error})
+    end.
 
 %% lazy shorthand
 fmt (Format, Args) ->
