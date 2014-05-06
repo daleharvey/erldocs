@@ -68,9 +68,13 @@ build_file_map (Conf, AppName, File) ->
     {Type, _Attr, Content} = read_xml(Conf, File),
 
     TypeSpecsFile = filename:join([dest(Conf), ".xml", "specs_" ++ bname(File)]),
-    TypeSpecs = case read_xml(Conf, TypeSpecsFile) of
-        {error, _, _} -> [];
-        {module, _, Specs} -> strip_whitespace(Specs)
+    case filelib:is_file(TypeSpecsFile) of
+        false ->                      TypeSpecs = [];
+        true ->
+            case read_xml(Conf, TypeSpecsFile) of
+                {error, _, _} ->      TypeSpecs = [];
+                {module, _, Specs} -> TypeSpecs = strip_whitespace(Specs)
+            end
     end,
 
     case lists:member(Type, buildable()) of
@@ -117,8 +121,8 @@ ensure_docsrc (AppDir, Conf) ->
     XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
 
-    ErlFiles = filelib:wildcard(filename:join([AppDir, "*.erl"])) ++
-        filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
+    ErlFiles = filelib:wildcard(filename:join([AppDir,        "*.erl"]))
+        ++     filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
 
     % Generate any missing module XML
     SrcFiles = [filename:absname(File) ||
@@ -184,12 +188,9 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
 %% finished (some dumb functions require to be ran from a particular dir)
 -spec tmp_cd(list(), fun()) -> term().
 tmp_cd (Dir, Fun) ->
-
     {ok, OldDir} = file:get_cwd(),
-
     ok = filelib:ensure_dir(Dir),
     ok = file:set_cwd(Dir),
-
     try
         Result = Fun(),
         ok = file:set_cwd(OldDir),
@@ -541,30 +542,22 @@ atos (List) when is_list(List) -> string:join([ atos(X) || X <- List ], " ");
 atos ({Name, Val})             -> atom_to_list(Name) ++ "=\""++Val++"\"".
 
 %% convert ascii into html characters
-htmlchars (List) ->
-    htmlchars(List, []).
-
-htmlchars ([], Acc) ->
-    lists:flatten(lists:reverse(Acc));
-
-htmlchars ([$<   | Rest], Acc) -> htmlchars(Rest, ["&lt;" | Acc]);
-htmlchars ([$>   | Rest], Acc) -> htmlchars(Rest, ["&gt;" | Acc]);
-htmlchars ([160  | Rest], Acc) -> htmlchars(Rest, ["&nbsp;" | Acc]);
-htmlchars ([Else | Rest], Acc) -> htmlchars(Rest, [Else | Acc]).
+htmlchars (List) -> htmlchars(List, []).
+htmlchars ([], Acc) -> lists:flatten(lists:reverse(Acc));
+htmlchars ([$<  |Rest], Acc) -> htmlchars(Rest, ["&lt;"  |Acc]);
+htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
+htmlchars ([$   |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
+htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
 %% @doc parse xml file against otp's dtd, need to cd into the
 %% source directory because files are addressed relative to it
 -spec read_xml(list(), list()) -> tuple().
 read_xml (_Conf, XmlFile) ->
-    %Opts  = [{fetch_path, [code:lib_dir(docbuilder, dtd)]},
-    %         {encoding, "latin1"}],
-    log("Reading xml for ~p\n", [XmlFile]),
+    log("Reading XML for ~p\n", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
     Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
-                          , filename:join(DocgenDir, "dtd_html_entities")
-                          ]}
-           , {encoding, "latin1"}
-           ],
+                          , filename:join(DocgenDir, "dtd_html_entities") ]}
+           , {encoding, "latin1"} ],
     {Xml, _}  = xmerl_scan:file(XmlFile, Opts),
     xmerl_lib:simplify_element(Xml).
 
