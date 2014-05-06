@@ -332,9 +332,14 @@ get_funs (App, Mod, {funcs, [], Funs}) ->
       [], Funs).
 
 fun_stuff (App, Mod, {func, [], Child}) ->
-
-    {fsummary, [], Xml} = lists:keyfind(fsummary, 1, Child),
-    Summary = string:substr(xml_to_str(Xml), 1, 50),
+    case lists:keyfind(fsummary, 1, Child) of
+        {fsummary, [], Xml} ->
+            Summary = string:substr(xml_to_str(Xml), 1, 50);
+        false ->
+            Summary = ""
+            %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
+            %%  but nametext instead. In such cases fsummary is ignored anyway.
+    end,
 
     F = fun ({name, [], Name}, Acc) ->
                 case make_name(Name) of
@@ -345,8 +350,8 @@ fun_stuff (App, Mod, {func, [], Child}) ->
                 [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
             (_Else, Acc) -> Acc
         end,
-
     lists:foldl(F, [], Child);
+
 fun_stuff (_App, _Mod, _Funs) ->
     [].
 
