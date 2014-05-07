@@ -11,9 +11,9 @@ Erlang/OTP ≥ R13B04
     cd erldocs/
     make
 
-## Usage
+## Usage *Mind the space around the flags!*
 
-    erldocs  [-o ‹output dir›]  [-i ‹include path›]⁺  ‹source path›⁺
+    erldocs  [-o ‹output dir›]  [-I ‹include path›]⁺  ‹source path›⁺
 
 Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
 
@@ -30,6 +30,3 @@ You can specify the output directory with the `-o` flag
 Specify paths to include files with `-I ‹path to include file1›`
 
     ./erldocs -I lib/stdlib/include -I ./include src/
-
-## To Do
-* Add include flags in the command-line. (Would allow `-I lib/*/include/*` and fix some erldocs.com 404s)
