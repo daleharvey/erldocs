@@ -203,33 +203,30 @@ tmp_cd (Dir, Fun) ->
 
 
 module_index (Conf, Index) ->
-
     log("Creating index.html ...~n"),
 
     Html = "<h1>Module Index</h1><hr/><br/><div>"
-        ++ xml_to_str(emit_index(Index))
+        ++      xml_to_str(emit_index(Index))
         ++ "</div>",
-
-    Args = [{base,    "./"},
-            {title,   "Module Index"},
-            {content, Html},
-            {funs,    ""}],
+    Args = [ {base,    "./"}
+           , {title,   "Module Index"}
+           , {content, Html}
+           , {funs,    ""} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file([dest(Conf), "/index.html"], Data).
 
 emit_index (L) ->
     lists:flatmap(
-      fun index_html/1,
+      fun (["app", App, _,  _Sum]) ->
+              [{a, [{name, App}]}, {h4, [], [App]}];
+          (["mod", App, Mod, Sum]) ->
+              Url = App ++ "/" ++ Mod ++ ".html",
+              [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
+          (_) ->
+              []
+      end,
       lists:sort(fun sort_index/2, L)).
-
-index_html (["app", App, _, _Sum]) ->
-    [{a, [{name, App}]}, {h4, [], [App]}];
-index_html (["mod", App, Mod, Sum]) ->
-    Url = App ++ "/" ++ Mod ++ ".html",
-    [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
-index_html (_) ->
-    [].
 
 type_ordering ("app") -> 1;
 type_ordering ("mod") -> 2;
@@ -562,7 +559,7 @@ read_xml (_Conf, XmlFile) ->
         {Xml, _Rest} ->
             xmerl_lib:simplify_element(Xml);
         Error ->
-            io:format("Error in read_xml File ~p Erro ~p\n", [XmlFile, Error]),
+            log("Error in read_xml File ~p Erro ~p\n", [XmlFile, Error]),
             throw({error_in_read_xml, XmlFile, Error})
     end.
 
