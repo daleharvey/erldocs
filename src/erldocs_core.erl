@@ -20,7 +20,7 @@
 %% API
 
 %% @doc Copy static files
--spec copy_static_files(list()) -> ok.
+-spec copy_static_files (list()) -> ok.
 copy_static_files (Conf) ->
     Dest = dest(Conf),
     {ok, ErlDocsCSS} = erldocs_css_dtl:render([]),
@@ -33,7 +33,7 @@ copy_static_files (Conf) ->
 
 %% @doc Parses arguments passed to script and calls
 %% appropriate function.
--spec dispatch(list()) -> ok.
+-spec dispatch (list()) -> ok.
 dispatch (Conf) ->
     Start = erlang:now(),
     build(Conf),
@@ -44,7 +44,7 @@ dispatch (Conf) ->
 
 
 %% @doc Build everything
--spec build(list()) -> ok.
+-spec build (list()) -> ok.
 build (Conf) ->
     filelib:ensure_dir(dest(Conf)),
 
@@ -58,7 +58,7 @@ build (Conf) ->
 build_apps (Conf, App, Index) ->
     AppName = bname(App),
     log("Building ~s~n", [AppName]),
-    Files   = ensure_docsrc(App, Conf),
+    Files   = ensure_docsrc(Conf, App),
     Map = fun (F) -> build_file_map(Conf, AppName, F) end,
     [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
@@ -111,12 +111,11 @@ build_file_map (Conf, AppName, File) ->
 
 %% @doc strip out the cos* files from the index, who the hell needs them
 %% anyway
--spec strip_cos(list()) -> list().
+-spec strip_cos (list()) -> list().
 strip_cos (Index) ->
     [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
 
-ensure_docsrc (AppDir, Conf) ->
-
+ensure_docsrc (Conf, AppDir) ->
     % List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
@@ -135,7 +134,7 @@ ensure_docsrc (AppDir, Conf) ->
     filelib:ensure_dir(XMLDir ++ "/"),
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
-
+    SpecsIncludes = [filename:join(AppDir, "include") | kf(incs, Conf)],
     SpecsGenModule =
         case erlang:system_info(otp_release) of
             "R"++Old when Old < "15" -> specs_gen__below_R15;
@@ -143,7 +142,7 @@ ensure_docsrc (AppDir, Conf) ->
         end,
     [ begin
           log("Generating Type Specs - ~p\n", [File]),
-          Args = [ "-I" ++ filename:join(AppDir, "include")
+          Args = [ "-I" ++ string:join(SpecsIncludes, " -I")
                  , "-o" ++ SpecsDest
                  , File ],
           try SpecsGenModule:main(Args)
@@ -154,12 +153,13 @@ ensure_docsrc (AppDir, Conf) ->
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
-    XMLFiles ++ tmp_cd(XMLDir, fun () -> gen_docsrc(AppDir, SrcFiles, XMLDir) end).
+    XMLFiles ++ tmp_cd(XMLDir, fun () -> gen_docsrc(Conf, AppDir, SrcFiles, XMLDir) end).
 
 
-gen_docsrc (AppDir, SrcFiles, Dest) ->
-    AppDirInclude = AppDir ++ "/include", %% Those ones usually don't work!
-    AppDirIncludes = [AppDirInclude | filelib:wildcard(AppDirInclude)],
+gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
+    AppDirIncludes = lists:append([ [AppDir ++ "/include"] %% Those ones usually don't work!
+                                  , filelib:wildcard(AppDir)
+                                  , kf(incs, Conf) ]),
     Opts = [ {sort_functions, false}
            , {layout, docgen_edoc_xml_cb}
            , {file_suffix, ".xml"}
@@ -172,6 +172,7 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
               DestFile = filename:join([Dest,Basename]) ++ ".xml",
               log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
               AbsInclude = filename:dirname(File) ++ "/../include",
+              %% filelib:wildcard(filename:join([filename:dirname(File), "../../*/include"])).
               Options = [ {includes, [AbsInclude | AppDirIncludes]}
                         , {dir, filename:dirname(DestFile)}
                         | Opts],
@@ -186,7 +187,7 @@ gen_docsrc (AppDir, SrcFiles, Dest) ->
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
--spec tmp_cd(list(), fun()) -> term().
+-spec tmp_cd (list(), fun()) -> term().
 tmp_cd (Dir, Fun) ->
     {ok, OldDir} = file:get_cwd(),
     ok = filelib:ensure_dir(Dir),
@@ -548,7 +549,7 @@ htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
 %% @doc parse xml file against otp's dtd, need to cd into the
 %% source directory because files are addressed relative to it
--spec read_xml(list(), list()) -> tuple().
+-spec read_xml (list(), list()) -> tuple().
 read_xml (_Conf, XmlFile) ->
     log("Reading XML for ~p\n", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
@@ -573,13 +574,13 @@ log (Str, Args) ->
     ?LOG(Str, Args).
 
 %% @doc shorthand for lists:keyfind
--spec kf(term(), list()) -> term().
+-spec kf (term(), list()) -> term().
 kf (Key, Conf) ->
     {Key, Val} = lists:keyfind(Key, 1, Conf),
     Val.
 
 %% @doc path to the destination folder
--spec dest(list()) -> list().
+-spec dest (list()) -> list().
 dest (Conf) ->
     [kf(dest, Conf)].
 
@@ -593,37 +594,37 @@ buildable () ->
     [erlref, cref].
 
 ignore () ->
-    [{"kernel", "init"},
-     {"kernel", "zlib"},
-     {"kernel", "erlang"},
-     {"kernel", "erl_prim_loader"}].
+    [ {"kernel", "init"}
+    , {"kernel", "zlib"}
+    , {"kernel", "erlang"}
+    , {"kernel", "erl_prim_loader"} ].
 
 -type map_fun(D, R) :: fun((D) -> R).
 -type reduce_fun(T) :: fun((T, _) -> _).
 
--spec pmapreduce(map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
+-spec pmapreduce (map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
 pmapreduce (Map, Reduce, Acc0, L) ->
-    pmapreduce(Map, Reduce, Acc0, L, 4). % erlang:system_info(schedulers_online) !
+    pmapreduce(Map, Reduce, Acc0, L, erlang:system_info(schedulers_online)).
 
--spec pmapreduce(map_fun(T, R), reduce_fun(R), R, [T], pos_integer()) -> [R].
+-spec pmapreduce (map_fun(T, R), reduce_fun(R), R, [T], pos_integer()) -> [R].
 pmapreduce (Map, Reduce, Acc0, L, N) ->
     Keys = [rpc:async_call(node(), ?MODULE, mapreduce,
                            [Map, Reduce, Acc0, Segment])
             || Segment <- segment(L, N)],
     mapreduce(fun rpc:yield/1, Reduce, Acc0, Keys).
 
--spec mapreduce(map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
+-spec mapreduce (map_fun(T, R), reduce_fun(R), R, [T]) -> [R].
 mapreduce (Map, Reduce, Acc0, L) ->
-    F = fun (Elem, Acc) ->
-                Reduce(Map(Elem), Acc)
-        end,
-    lists:foldl(F, Acc0, lists:reverse(L)).
+    lists:foldl(fun (Elem, Acc) ->
+                        Reduce(Map(Elem), Acc)
+                end,
+                Acc0, lists:reverse(L)).
 
--spec segment([T], pos_integer()) -> [[T]].
+-spec segment ([T], pos_integer()) -> [[T]].
 segment (List, Segments) ->
     segment(List, length(List) div Segments, Segments).
 
--spec segment([T], non_neg_integer(), pos_integer()) -> [[T]].
+-spec segment ([T], non_neg_integer(), pos_integer()) -> [[T]].
 segment (List, _N, 1) ->
     [List];
 segment (List, N, Segments) ->

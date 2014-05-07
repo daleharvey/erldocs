@@ -8,6 +8,7 @@
 
 -record(conf, { dirs = []
               , destination = cwd() ++ "/docs/erldocs"
+              , includes = []
               }).
 
 %% API
@@ -17,18 +18,25 @@ main (Args) ->
 
 %% Internals
 
-parse ([], #conf{destination = Destination} = Conf) ->
-    Dirs = case Conf#conf.dirs of
-      [] -> [cwd()];
-      Else -> Else
+parse ([], Conf) ->
+    Destination    = Conf#conf.destination,
+    Includes       = Conf#conf.includes,
+    case Conf#conf.dirs of
+      []   -> Dirs = [cwd()];
+      Else -> Dirs = Else
     end,
-    run([{apps, Dirs}, {dest, filename:absname(Destination)}]);
+    run([ {apps, Dirs}
+        , {dest, absp(Destination)}
+        , {incs, Includes} ]);
 
 parse (["-o", Dest | Rest], Conf) ->
-    parse(Rest, Conf#conf{destination=Dest});
+    parse(Rest, Conf#conf{destination = Dest});
+
+parse (["-I", Include | Rest], #conf{includes = Includes} = Conf) ->
+    parse(Rest, Conf#conf{includes = [absp(Include)|Includes]});
 
 parse ([Dir | Rest], #conf{dirs = Dirs} = Conf) ->
-    parse(Rest, Conf#conf{dirs = [Dir | Dirs]}).
+    parse(Rest, Conf#conf{dirs = [absp(Dir)|Dirs]}).
 
 
 run (Conf) ->
@@ -37,6 +45,9 @@ run (Conf) ->
             log("Error running script:\n~p\n~p\n",
                 [erlang:get_stacktrace(), {Type, Error}])
     end.
+
+absp (Filename) ->
+    filename:absname(Filename).
 
 log (Str, Args) ->
     io:format(Str, Args).

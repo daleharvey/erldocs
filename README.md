@@ -13,6 +13,8 @@ Erlang/OTP ≥ R13B04
 
 ## Usage
 
+    erldocs  [-o ‹output dir›]  [-i ‹include path›]⁺  ‹source path›⁺
+
 Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
 
     ./erldocs
@@ -24,6 +26,10 @@ Additional arguments can specify the location to source files to be documented
 You can specify the output directory with the `-o` flag
 
     ./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts
+
+Specify paths to include files with `-I ‹path to include file1›`
+
+    ./erldocs -I lib/stdlib/include -I ./include src/
 
 ## To Do
 * Add include flags in the command-line. (Would allow `-I lib/*/include/*` and fix some erldocs.com 404s)
