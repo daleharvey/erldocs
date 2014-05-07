@@ -27,6 +27,6 @@ done
     | tee _"$release"
 
 rm -rf "$odir"/.xml
-tar jcf "$idir".tar.bz2 "$idir"
+tar jcf "$odir".tar.bz2 "$odir"
 
 shift && [[ "$1" = '' ]] && exit 0 || $0 $*
