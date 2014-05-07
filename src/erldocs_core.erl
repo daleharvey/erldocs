@@ -134,7 +134,8 @@ ensure_docsrc (Conf, AppDir) ->
     filelib:ensure_dir(XMLDir ++ "/"),
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
-    SpecsIncludes = [filename:join(AppDir, "include") | kf(incs, Conf)],
+    SpecsIncludes =
+        ["-I"++Inc || Inc <- [filename:join(AppDir,"include")|kf(incs,Conf)]],
     SpecsGenModule =
         case erlang:system_info(otp_release) of
             "R"++Old when Old < "15" -> specs_gen__below_R15;
@@ -142,9 +143,7 @@ ensure_docsrc (Conf, AppDir) ->
         end,
     [ begin
           log("Generating Type Specs - ~p\n", [File]),
-          Args = [ "-I" ++ string:join(SpecsIncludes, " -I")
-                 , "-o" ++ SpecsDest
-                 , File ],
+          Args = ["-o"++SpecsDest] ++ SpecsIncludes ++ [File],
           try SpecsGenModule:main(Args)
           catch _:SpecsGenError ->
                   log("Error generating type specs:\n~p\n~p\n",
@@ -153,7 +152,9 @@ ensure_docsrc (Conf, AppDir) ->
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
-    XMLFiles ++ tmp_cd(XMLDir, fun () -> gen_docsrc(Conf, AppDir, SrcFiles, XMLDir) end).
+    XMLFiles
+        ++ tmp_cd(XMLDir,
+                  fun () -> gen_docsrc(Conf, AppDir, SrcFiles, XMLDir) end).
 
 
 gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
@@ -172,7 +173,6 @@ gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
               DestFile = filename:join([Dest,Basename]) ++ ".xml",
               log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
               AbsInclude = filename:dirname(File) ++ "/../include",
-              %% filelib:wildcard(filename:join([filename:dirname(File), "../../*/include"])).
               Options = [ {includes, [AbsInclude | AppDirIncludes]}
                         , {dir, filename:dirname(DestFile)}
                         | Opts],

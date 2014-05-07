@@ -25,9 +25,10 @@ parse ([], Conf) ->
       []   -> Dirs = [cwd()];
       Else -> Dirs = Else
     end,
-    run([ {apps, Dirs}
-        , {dest, absp(Destination)}
-        , {incs, Includes} ]);
+    PropList = [ {apps, Dirs}
+               , {dest, absp(Destination)}
+               , {incs, Includes} ],
+    run(PropList);
 
 parse (["-o", Dest | Rest], Conf) ->
     parse(Rest, Conf#conf{destination = Dest});
