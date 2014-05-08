@@ -4,6 +4,8 @@
   , {vsn, "1"}
   , {modules, [ erldocs
               , erldocs_core
+              , specs_gen__R15_and_above
+              , specs_gen__below_R15
               ]}
   , {registered, []}
   , {applications, [ kernel
