@@ -113,8 +113,7 @@ build_file_map (Conf, AppName, File) ->
 %% anyway
 -spec strip_cos (list()) -> list().
 strip_cos (Index) ->
-    io:format("WAT ~p", [[{App,X} || X = [_, App |_] <- Index, nomatch /= re:run(App, "^cos") ]]).
-    [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
+    [X || X = [_, App |_] <- Index, not lists:prefix("cos", App)].
 
 ensure_docsrc (Conf, AppDir) ->
     % List any doc/src/*.xml files that exist in the source files
@@ -242,8 +241,8 @@ index_ordering ([Type, App, Mod, _Sum]) ->
 sort_index (A, B) ->
     index_ordering(A) =< index_ordering(B).
 
-html_encode (Str) ->
-    re:replace(Str, "'", "", [{return, list}, global]).
+html_encode (Str)  ->
+    [C || C <- Str, C /= $'].
 
 javascript_index (Conf, FIndex) ->
 
@@ -264,8 +263,8 @@ javascript_index (Conf, FIndex) ->
               end,
               lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
-    Js = re:replace(fmt("var index = [~s];", [string:join(Index, ",")]),
-                    "\\n|\\r", "", [{return,list}, global]),
+    Js = fmt("var index = [~s];",
+             [string:join([[C || C <- I, C /= $\n, C /= $\r] || I <- Index], ",")]),
 
     ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
 
@@ -502,16 +501,16 @@ inc_name (Name, List, Acc) ->
 
 %% Strips xml children that are entirely whitespace (space, tabs, newlines)
 strip_whitespace (List) when is_list(List) ->
-    [ strip_whitespace(X) || X <- List, is_whitespace(X) ];
+    [strip_whitespace(X) || X <- List, 'keeper?'(X)];
 strip_whitespace ({El,Attr,Children}) ->
     {El, Attr, strip_whitespace(Children)};
 strip_whitespace (Else) ->
     Else.
 
-is_whitespace (X) when is_tuple(X); is_number(X) ->
+'keeper?' (X) when is_tuple(X); is_number(X) ->
     true;
-is_whitespace (X) ->
-    nomatch == re:run(X, "^[ \n\t]*$", [unicode]). %"
+'keeper?' (X) ->
+    not lists:all(fun (C) -> C == $  orelse C == $\n orelse C == $\t end, X).
 
 %% rather basic xml to string converter, takes xml of the form
 %% {tag, [{listof, "attributes"}], ["list of children"]}
