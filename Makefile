@@ -1,7 +1,7 @@
 all: erl.mk | ensure
 
 erl.mk:
-	wget -nv -O $@ 'https://raw.github.com/fenollp/erl-mk/master/erl.mk' || rm $@
+	curl -fsSLo $@ 'https://raw.github.com/fenollp/erl-mk/master/erl.mk' || rm $@
 
 dep_erlydtl = git://github.com/erlydtl/erlydtl.git master
 
