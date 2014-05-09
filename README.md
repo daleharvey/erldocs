@@ -30,3 +30,7 @@ You can specify the output directory with the `-o` flag
 Specify paths to include files with `-I ‹path to include file1›`
 
     ./erldocs -I lib/stdlib/include -I ./include src/
+
+To build Erlang|OTP's docs the same way [erldocs.com](http://erldocs.com/) builds them:
+
+    ./otp.sh otp_src_17.0
