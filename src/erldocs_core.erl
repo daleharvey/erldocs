@@ -113,6 +113,7 @@ build_file_map (Conf, AppName, File) ->
 %% anyway
 -spec strip_cos (list()) -> list().
 strip_cos (Index) ->
+    io:format("WAT ~p", [[{App,X} || X = [_, App |_] <- Index, nomatch /= re:run(App, "^cos") ]]).
     [X || X = [_, App |_] <- Index, nomatch == re:run(App, "^cos") ].
 
 ensure_docsrc (Conf, AppDir) ->
