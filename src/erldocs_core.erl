@@ -6,9 +6,9 @@
 
 -export([ copy_static_files/1
         , build/1
-        , dispatch/1 ]).
+        , dispatch/1
 
--export([ mapreduce/4
+        , mapreduce/4
         , pmapreduce/4
         , pmapreduce/5 ]).
 
@@ -276,18 +276,18 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
     File = filename:join([dest(Conf), App, Mod ++ ".html"]),
     ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
 
-    Acc = [{ids,[]}, {list, ul}, {functions, []}, {types, Types}],
+    Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
-    {[_Id, _List, {functions, Funs}, {types, _}], NXml}
+    {[_Id, _List, {functions,Funs}, {types,_}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
 
-    XmlFuns = [{li, [], [{a, [{href, "#"++X}], [X]}]}
+    XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
                 || X <- lists:reverse(Funs) ],
 
     Args = [{base,    "../"},
             {title,   Mod ++ " (" ++ App ++ ") - "},
             {content, xml_to_str(NXml)},
-            {funs,    xml_to_str({ul, [{id, "funs"}], XmlFuns})}],
+            {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})}],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(File, Data).
@@ -373,17 +373,17 @@ app_dirs (Conf) ->
           end,
     lists:foldl(Fun, [], kf(apps, Conf)).
 
-add_html ("#"++Rest) ->
+'add .html' ("#"++Rest) ->
     "#"++Rest;
-add_html (Link) ->
+'add .html' (Link) ->
     case string:tokens(Link, "#") of
         [Tmp]    -> Tmp++".html";
         [N1, N2] -> lists:flatten([N1, ".html#", N2])
     end.
 
 %% Transforms erlang xml format to html
-tr_erlref ({type_desc, [{variable, Name}], [Desc]}, _Acc) ->
-    {'div', [{class, "type_desc"}], [{code, [], [Name, " = ",Desc]}]};
+tr_erlref (Element) ->
+    tr_erlref(Element, ignore_acc).
 tr_erlref ({header,[],_Child}, _Acc) ->
     ignore;
 tr_erlref ({marker, [{id, Marker}], []}, _Acc) ->
@@ -402,28 +402,43 @@ tr_erlref ({section, [], Child}, _Acc) ->
     {'div', [{class, "section"}], Child};
 tr_erlref ({title, [], Child}, _Acc) ->
     {h4, [], [Child]};
-tr_erlref ({type, [], Child}, _Acc) ->
-    {ul, [{class, "type"}], Child};
 tr_erlref ({v, [], []}, _Acc) ->
     {li, [], [" "]};
 tr_erlref ({v, [], Child}, _Acc) ->
     {li, [], [{code, [], Child}]};
 tr_erlref ({seealso, [{marker, Marker}], Child}, _Acc) ->
-    N = case string:tokens(Marker, ":") of
-            [] -> add_html(lists:flatten(Child));
-	    [Tmp]     -> add_html(Tmp);
-	    [Ap | Md] ->  "../"++Ap++"/" ++ add_html(lists:flatten(Md))
-	end,
-    {a, [{href, N}, {class, "seealso"}], Child};
+    case string:tokens(Marker, ":") of
+        []        -> Url = 'add .html'(lists:flatten(Child));
+        [Tmp]     -> Url = 'add .html'(Tmp);
+        [Ap | Md] -> Url = "../"++ Ap ++"/"++ 'add .html'(lists:flatten(Md))
+    end,
+    {a, [{href,Url},{class,"seealso"}], Child};
+
 tr_erlref ({desc, [], Child}, _Acc) ->
     {'div', [{class, "description"}], Child};
 tr_erlref ({description, [], Child}, _Acc) ->
     {'div', [{class, "description"}], Child};
+
 tr_erlref ({funcs, [], Child}, _Acc) ->
-    {'div', [{class,"functions"}], [{h4, [], ["Functions"]},
-                                    {hr, [], []} | Child]};
+    tr__category("Functions", "functions", Child);
 tr_erlref ({func, [], Child}, _Acc) ->
     {'div', [{class,"function"}], Child};
+
+tr_erlref ({datatypes, [], Child}, _Acc) ->
+    tr__category("Types", "types", Child);
+tr_erlref ({datatype, [], Child}, _Acc) ->
+    {'div', [{class,"type"}], Child};
+tr_erlref ({name, [], [{marker,[{id,ID="type-"++_}],Child}|_]}, _Acc) ->
+    %% Documented exported opaque types
+    %TODO: extract opaqueness from spec (but that's impossible?)
+    tr__type_name(ID, Child);
+tr_erlref ({name, [{name,TName}], []}, Acc) ->
+    tr__type_name(TName, "0", Acc);
+tr_erlref ({name, [{name,TName},{n_vars,NVars}], []}, Acc) ->
+    tr__type_name(TName, NVars, Acc);
+tr_erlref ({name, [{name,TName},{n_vars,_,[NVars]}], []}, Acc) ->
+    tr__type_name(TName, NVars, Acc);
+
 tr_erlref ({tag, [], Child}, _Acc) ->
     {dt, [], Child};
 tr_erlref ({taglist, [], Child}, [Ids, _List, Funs]) ->
@@ -446,48 +461,120 @@ tr_erlref ({warning, [], Child}, _Acc) ->
     {'div', [{class, "warning"}], [{h2, [], ["Warning!"]} | Child]};
 tr_erlref ({name, [], [{ret,[],[Ret]}, {nametext,[],[Desc]}]}, _Acc) ->
     {pre, [], [Ret ++ " " ++ Desc]};
-tr_erlref ({name, [{name, Name}, {arity, N}], []}, Acc) ->
-    [{ids, Ids}, List, {functions, Funs}, {types, Types}] = Acc,
-    PName = case find_spec(Name, N, Types) of
-        {ok, Tmp} -> Tmp;
-        _ -> Name ++ "/" ++ N
-    end,
+
+tr_erlref ({type, [], Child}, _Acc) ->
+    {ul, [{class, "type"}], Child};
+tr_erlref (E={type, [{name,TName}], []}, Acc) ->
+    {_, Types} = lists:keyfind(types, 1, Acc),
+    case find_type(TName, "0", Types) of
+        ignore -> E;
+        {_ID, Child} -> {ul
+                        , [{class, "type"}]
+                        , {li, [], {code, [], [Child]}} }
+    end;
+
+tr_erlref ({name, [{name,Name}, {arity,N}], []}, Acc) ->
+    [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
     NName = inc_name(Name, Ids, 0),
-    { {h3, [{id, Name ++ "/" ++ N}], [PName]},
-      [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}, {types, Types}]};
-tr_erlref ({name, [], Child}, [{ids, Ids}, List, {functions, Funs}, {types, Types}]) ->
+    PName = case find_spec(Name, N, Types) of
+                {Spec, invalid_name} -> Name ++"/"++ N;
+                {Spec, DefiniteName} -> DefiniteName
+            end,
+    NSpec = case Spec of
+                [] -> [];
+                _  -> [ {ul, [{class, "type_desc"}]
+                        , [{li, [], {code, [], [S]}} || S <- Spec, S /= []]} ]
+            end,
+    { [ {h3, [{id, Name ++ "/" ++ N}], [PName]}, "\n    " | NSpec ]
+    , [{ids,[NName|Ids]}, List, {functions,[NName|Funs]}, {types,Types}] };
+tr_erlref ({name, [], Child}, Acc) ->
+    [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
     case make_name(Child) of
         ignore -> ignore;
         Name   ->
             NName = inc_name(Name, Ids, 0),
-            { {h3, [{id, NName}], [Child]},
-              [{ids, [NName | Ids]}, List, {functions, [NName|Funs]}, {types, Types}]}
+            { {h3, [{id, NName}], [Child]}
+            , [{ids,[NName|Ids]}, List, {functions,[NName|Funs]}, {types,Types}] }
     end;
+
+tr_erlref ({type_desc, [{variable, Name}], [Desc]}, _Acc) ->
+    {'div', [{class, "type_desc"}], [{code, [], [Name, " = ",Desc]}]};
 tr_erlref ({fsummary, [], _Child}, _Acc) ->
     ignore;
 tr_erlref (Else, _Acc) ->
     Else.
 
-find_spec (_Name, _Arity, []) ->
-    spec_not_found;
 
-find_spec (Name, Arity, [{spec, [], Specs} | Rest]) ->
-    {name, _, [SpecName]} = lists:keyfind(name, 1, Specs),
-    {arity, _, [ArityName]} = lists:keyfind(arity, 1, Specs),
-    case SpecName =:= Name andalso ArityName =:= Arity of
-        true ->
-            {contract, _, Contracts} = lists:keyfind(contract, 1, Specs),
-            {clause, _, Clause} = lists:keyfind(clause, 1, Contracts),
-            {head, _, Head} = lists:keyfind(head, 1, Clause),
-            case io_lib:deep_char_list(Head) of
-                true -> {ok, lists:flatten(Head)};
-                false -> invalid_name
-            end;
+find_spec (_Name, _Arity, []) ->
+    {[], invalid_name};
+find_spec (Name, Arity, [{spec, [], Specs} |Rest]) ->
+    {_, _, [SpecName]}  = lists:keyfind(name, 1, Specs),
+    {_, _, [ArityName]} = lists:keyfind(arity, 1, Specs),
+    case (SpecName =:= Name) and (ArityName =:= Arity) of
         false ->
-            find_spec(Name, Arity, Rest)
+            find_spec(Name, Arity, Rest);
+        true  ->
+            {_, _, Contracts} = lists:keyfind(contract, 1, Specs),
+            {_, _, Clause}    = lists:keyfind(clause, 1, Contracts),
+            {_, _, Head}      = lists:keyfind(head, 1, Clause),
+            TheName = lists:map(fun tr_erlref/1, Head),
+            case lists:keyfind(guard, 1, Clause) of
+                false ->
+                    TheSpec = [];
+                {_, _, Subtypes} ->
+                    TheSpec = [ lists:map(fun tr_erlref/1, S)
+                                || {subtype,[]
+                                   , [ {typename,[],_}
+                                     , {string,[],S} ] } <- Subtypes]
+            end,
+            {TheSpec, TheName}
     end;
 find_spec (Name, Arity, [_ | Rest]) ->
     find_spec(Name, Arity, Rest).
+
+find_type (Name0, NVars0, [{type,[],Type} |Rest]) ->
+    %%don't print insides when type is -opaque
+    {_, _, [Name]}   = lists:keyfind(name, 1, Type),
+    {_, _, [NVars]}  = lists:keyfind(n_vars, 1, Type),
+    case (Name =:= Name0) and (NVars =:= NVars0) of
+        true ->
+            {_, _, TypeDecl} = lists:keyfind(typedecl, 1, Type),
+            {_, _, TypeHead} = lists:keyfind(typehead, 1, TypeDecl),
+            [{marker,[{id,ID}|_],[NName]} |Child] = TypeHead, %%refactor with tr_erlref
+            {ID, lists:flatten([NName|Child])};
+        false ->
+            find_type(Name0, NVars0, Rest)
+    end;
+find_type (Name, NVars, [_|Rest]) ->
+    find_type(Name, NVars, Rest);
+find_type (_Name, _NVars, []) ->
+    ignore.
+
+
+tr__type_name (ID, Child) ->
+    NChild = [case E of
+                  Br when element(1,E) =:= br ->
+                      %%Hack to align display of `#types.type h3`. TODO
+                      %% [Br, string:copies("&nbsp;", 8)];
+                      [Br | lists:duplicate(8, {nbsp,[],[]})];
+                  _ -> E
+              end || E <- Child],
+    {h3, [{id,ID}], [NChild]}.
+tr__type_name (TName, NVars, Acc) ->
+    {_, Types} = lists:keyfind(types, 1, Acc),
+    case find_type(TName, NVars, Types) of
+        {ID, Child} ->
+            tr__type_name(ID, Child);
+        ignore ->
+            tr__type_name("type-"++TName, TName++"/"++NVars)
+    end.
+
+
+tr__category (Name, ID, Child) ->
+    {'div', [{id,ID}, {class,"category"}]
+    , [ {h4, [], [{a, [{href,"#"++ID}], [Name]}]}
+      , {hr, [], []}
+      | Child ]}.
 
 
 nname (Name, 0)   -> Name;
@@ -518,13 +605,19 @@ strip_whitespace (Else) ->
 xml_to_str (Xml) ->
     xml_to_html (Xml).
 
+xml_to_html (Nbsp)
+  when element(1, Nbsp) =:= nbsp ->
+    "&nbsp;";
+xml_to_html ({nbsp, [], Child}) ->
+    "&nbsp;" ++ xml_to_html(Child);
+
 xml_to_html ({Tag, Attr}) ->
     %% primarily for cases such as <a name="">
     fmt("<~ts ~ts>", [Tag, atos(Attr)]);
 xml_to_html ({Tag, Attr, []}) ->
-    fmt("<~ts ~ts />", [Tag, atos(Attr)]);
+    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
 xml_to_html ({Tag, [], []}) ->
-    fmt("<~ts />", [Tag]);
+    fmt("<~ts/>", [Tag]);
 xml_to_html ({Tag, [], Child}) ->
     fmt("<~ts>~ts</~ts>", [Tag, xml_to_html(Child), Tag]);
 xml_to_html ({Tag, Attr, Child}) ->
@@ -532,8 +625,11 @@ xml_to_html ({Tag, Attr, Child}) ->
 xml_to_html (List) when is_list(List) ->
     case io_lib:char_list(List) of
         true  -> htmlchars(List);
-        false -> lists:flatten([ xml_to_html(X) || X <- List])
-    end.
+        false -> lists:flatten([xml_to_html(X) || X <- List])
+    end;
+xml_to_html (Else) ->
+    Else.
+
 
 atos ([])                      -> "";
 atos (List) when is_list(List) -> string:join([ atos(X) || X <- List ], " ");

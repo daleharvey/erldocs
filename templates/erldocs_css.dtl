@@ -48,7 +48,7 @@ dl {
 }
 
 dt {
-    margin : 2px 0px;
+    margin : 2px 0px; /*<=> margin-right useless?*/
 }
 
 dd {
@@ -71,7 +71,7 @@ a:visited {
 }
 
 ul {
-    margin : 10px 0px;
+    margin : 10px 0px; /*<=> margin-right useless?*/
 }
 
 code {
@@ -86,7 +86,7 @@ pre code {
 }
 
 pre {
-    margin      : 10px 0px;
+    margin      : 10px 0px; /*<=> margin-right useless?*/
     padding     : 5px;
     border-left : 2px solid #ccc;
     background  : #EFEFEF;
@@ -139,8 +139,16 @@ h2.modsummary {
     margin-top    : 10px;
 }
 
-.functions {
+.category {
     margin-top : 15px;
+}
+.category h4 a {
+    text-decoration : none;
+    font-weight     : inherit;
+}
+.category h4 a:visited {
+    color  : inherit;
+    border : inherit;
 }
 
 .function h3 {
@@ -148,22 +156,71 @@ h2.modsummary {
     font-size   : 14px;
     font-weight : bold;
 }
-
 .function {
-    margin : 25px 0px;
+    margin : 25px 0px; /*<=> margin-right useless?*/
 }
-
 .function p {
     padding-left : 10px;
 }
-
 .function em {
     font-style  : normal;
     font-weight : bold;
 }
-
 .function ul {
     list-style-type : none;
+}
+.function h3 a {
+    text-decoration: none;
+    color: blue;
+}
+
+.type h3 {
+    margin-top  : 5px;
+    font-size   : 14px;
+    font-weight : bold;
+}
+.type {
+    margin : 10px 0px; /*<=> margin-right useless?*/
+}
+.type p {
+    padding-left : 10px;
+}
+.type em {
+    font-style  : normal;
+    font-weight : bold;
+}
+.type ul {
+    list-style-type : none;
+}
+.function .type code {
+    background    : inherit;
+ /* font-family   : inherit; */
+    border-bottom : inherit;
+    margin-left   : 30px;
+}
+.function .type code a {
+    text-decoration: none;
+    color: blue;
+}
+.type h3 a {
+    text-decoration: none;
+    color: blue;
+}
+
+.type_desc {
+    margin-left : 30px;
+}
+h3 + .type_desc {
+    margin-top : 10px;
+}
+.type_desc code {
+    background    : inherit;
+/*  font-family   : inherit; */
+    border-bottom : inherit;
+}
+.type_desc code a {
+    text-decoration: none;
+    color: blue;
 }
 
 .seealso li {
@@ -434,13 +491,6 @@ h2.modsummary {
 
 .notes {
     opacity : 0.6;
-}
-
-.type_desc {
-    margin-left : 30px;
-}
-h3 + .type_desc {
-   margin-top : 10px;
 }
 
 pre.sh_sourceCode {
