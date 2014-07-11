@@ -30,19 +30,19 @@ var ErlDocs = (function(index) {
     var searchActive  = false;
     var selected      = null;
     var resultsCount  = 0;
-    var showingFuns   = true;
+    // var showingFuns   = true;
 
 
-    var getDetails = function() {
-        return showingFuns ? {"text":"Hide Functions", "cBottom": "25%", fTop: "75%"}
-                           : {"text":"View Functions", "cBottom": "0px", fTop: "100%"};
-    };
+    // var getDetails = function() {
+    //     return showingFuns ? {"text":"Hide Functions", "cBottom": "25%", fTop: "75%"}
+    //                        : {"text":"View Functions", "cBottom": "0px", fTop: "100%"};
+    // };
 
-    var setDetails = function(details, fun) {
-        $("#viewfuns").text(details.text);
-        $("#content").css({"bottom":details.cBottom});
-        $("#funwrapper").animate({"top":details.fTop}, "normal", fun);
-    };
+    // var setDetails = function(details, fun) {
+    //     $("#viewfuns").text(details.text);
+    //     $("#content").css({"bottom":details.cBottom});
+    //     $("#funwrapper").animate({"top":details.fTop}, "normal", fun);
+    // };
 
     function scrollIntoView($parent, $child, force) {
         var childTop     = $child.position().top - RESULT_OFFSET_Y;
@@ -327,20 +327,20 @@ var ErlDocs = (function(index) {
 
     if (document.title.match("Module Index") === null) {
         updateTitle();
-        setDetails(getDetails(), function() {
-            $("#funwrapper").css({"display":"block"});
-        });
+        // setDetails(getDetails(), function() {
+        //     $("#funwrapper").css({"display":"block"});
+        // });
     }
 
-    $("#viewfuns").bind("mousedown", function(e) {
+    // $("#viewfuns").bind("mousedown", function(e) {
 
-        showingFuns = !showingFuns;
-        setDetails(getDetails(), null);
+    //     showingFuns = !showingFuns;
+    //     setDetails(getDetails(), null);
 
-        if (!!window.localStorage) {
-            window.localStorage.footer = showingFuns;
-        }
-    });
+    //     if (!!window.localStorage) {
+    //         window.localStorage.footer = showingFuns;
+    //     }
+    // });
 
     $(window).bind('resize', windowResize);
     windowResize();

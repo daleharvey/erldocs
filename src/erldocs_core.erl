@@ -281,13 +281,13 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
     {[_Id, _List, {functions,Funs}, {types,_}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
 
-    XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
-                || X <- lists:reverse(Funs) ],
+%%  XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
+%%              || X <- lists:reverse(Funs) ],
 
-    Args = [{base,    "../"},
-            {title,   Mod ++ " (" ++ App ++ ") - "},
-            {content, xml_to_str(NXml)},
-            {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})}],
+    Args = [ {base,    "../"}
+           , {title,   Mod ++ " (" ++ App ++ ") - "}
+           , {content, xml_to_str(NXml)} ],
+%%         , {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(File, Data).

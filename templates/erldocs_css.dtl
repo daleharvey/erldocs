@@ -444,34 +444,34 @@ h3 + .type_desc {
     font-size : 9px;
 }
 
-#funwrapper {
-    position : fixed;
-    top      : 75%;
-    left     : 241px;
-    right    : 0px;
-    bottom   : 0px;
-    display  : none;
-}
+/* #funwrapper { */
+/*     position : fixed; */
+/*     top      : 75%; */
+/*     left     : 241px; */
+/*     right    : 0px; */
+/*     bottom   : 0px; */
+/*     display  : none; */
+/* } */
 
-#viewfuns {
-    display             : block;
-    text-align          : center;
-    width               : 80px;
-    background          : #eee;
-    border              : 1px solid #999;
-    border-bottom-width : 0px;
-    font-size           : 10px;
-    padding             : 4px 5px 1px 5px;
-    cursor              : pointer;
-    position            : relative;
-    top                 : -19px;
-    right               : -20px;
-    z-index             : 99;
-    -moz-border-radius-topleft     : 4px;
-    -moz-border-radius-topright    : 4px;
-    -webkit-border-radius-topleft  : 4px;
-    -webkit-border-radius-topright : 4px;
-}
+/* #viewfuns { */
+/*     display             : block; */
+/*     text-align          : center; */
+/*     width               : 80px; */
+/*     background          : #eee; */
+/*     border              : 1px solid #999; */
+/*     border-bottom-width : 0px; */
+/*     font-size           : 10px; */
+/*     padding             : 4px 5px 1px 5px; */
+/*     cursor              : pointer; */
+/*     position            : relative; */
+/*     top                 : -19px; */
+/*     right               : -20px; */
+/*     z-index             : 99; */
+/*     -moz-border-radius-topleft     : 4px; */
+/*     -moz-border-radius-topright    : 4px; */
+/*     -webkit-border-radius-topleft  : 4px; */
+/*     -webkit-border-radius-topright : 4px; */
+/* } */
 
 .main {
     padding     : 10px 20px !important;
