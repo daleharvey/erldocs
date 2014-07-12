@@ -278,7 +278,7 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
 
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
-    {[_Id, _List, {functions,Funs}, {types,_}], NXml}
+    {[_Id, _List, {functions,_Funs}, {types,_Types}], NXml}
         = render(fun tr_erlref/2,  Xml, Acc),
 
 %%  XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
@@ -345,7 +345,9 @@ fun_stuff (App, Mod, {func, [], Child}) ->
                     ignore -> Acc;
                     NName  -> [ ["fun", App, Mod++":"++NName, Summary] | Acc ]
                 end;
-            ({name, [{name, Name}, {arity, Arity}], []}, Acc) ->
+            ({name, [{name,Name}, {arity,Arity}], []}, Acc) ->
+                [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
+            ({name, [{name,Name}, {arity,Arity}, {clause_i,"1"}], []}, Acc) ->
                 [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
             (_Else, Acc) -> Acc
         end,
@@ -473,19 +475,24 @@ tr_erlref (E={type, [{name,TName}], []}, Acc) ->
                         , {li, [], {code, [], [Child]}} }
     end;
 
+tr_erlref ({name, [{name,Name}, {arity,N}, {clause_i,"1"}], []}, Acc) ->
+    tr_erlref({name, [{name,Name}, {arity,N}], []}, Acc);
 tr_erlref ({name, [{name,Name}, {arity,N}], []}, Acc) ->
     [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
     NName = inc_name(Name, Ids, 0),
-    PName = case find_spec(Name, N, Types) of
-                {Spec, invalid_name} -> Name ++"/"++ N;
-                {Spec, DefiniteName} -> DefiniteName
-            end,
-    NSpec = case Spec of
-                [] -> [];
-                _  -> [ {ul, [{class, "type_desc"}]
-                        , [{li, [], {code, [], [S]}} || S <- Spec, S /= []]} ]
-            end,
-    { [ {h3, [{id, Name ++ "/" ++ N}], [PName]}, "\n    " | NSpec ]
+    ID = Name ++ "/" ++ N,
+    Found = find_spec(Name, N, Types),
+    {SpecsFound, Names} = lists:unzip(Found),
+    Specs = merge_specs(SpecsFound),
+    NSpecs = [ {li, [], [{code, [], [Spec]}]} || Spec <- Specs ],
+    Tags = case Names of
+               []             ->
+                   [{h3, [{id,ID}], [ID]}];
+               [PName|PNames] ->
+                   [{h3, [{id,ID}], [PName]}]
+                       ++ [ {h3, [], [PNameK]} || PNameK <- PNames ]
+           end,
+    { Tags ++ ["\n    ", {ul, [{class,"type_desc"}], NSpecs}]
     , [{ids,[NName|Ids]}, List, {functions,[NName|Funs]}, {types,Types}] };
 tr_erlref ({name, [], Child}, Acc) ->
     [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
@@ -505,8 +512,21 @@ tr_erlref (Else, _Acc) ->
     Else.
 
 
-find_spec (_Name, _Arity, []) ->
-    {[], invalid_name};
+merge_specs (Specs) ->
+    case Specs of
+        []    -> [];
+        [H|T] -> merge_specs(T, lists:reverse(H))
+    end.
+merge_specs ([], Acc) -> lists:reverse(Acc);
+merge_specs ([[]|Rest], Acc) ->
+    merge_specs(Rest, Acc);
+merge_specs ([[Spec|Specs]|Rest], Acc) ->
+    case lists:member(Spec, Acc) of
+        true  -> merge_specs([Specs|Rest],       Acc );
+        false -> merge_specs([Specs|Rest], [Spec|Acc])
+    end.
+
+find_spec (_Name, _Arity, []) -> [];
 find_spec (Name, Arity, [{spec, [], Specs} |Rest]) ->
     {_, _, [SpecName]}  = lists:keyfind(name, 1, Specs),
     {_, _, [ArityName]} = lists:keyfind(arity, 1, Specs),
@@ -527,7 +547,8 @@ find_spec (Name, Arity, [{spec, [], Specs} |Rest]) ->
                                    , [ {typename,[],_}
                                      , {string,[],S} ] } <- Subtypes]
             end,
-            {TheSpec, TheName}
+            [ {TheSpec,TheName}  %% Continue searching for other clauses
+              | find_spec(Name, Arity, Rest) ]
     end;
 find_spec (Name, Arity, [_ | Rest]) ->
     find_spec(Name, Arity, Rest).
