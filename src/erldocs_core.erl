@@ -464,6 +464,8 @@ tr_erlref ({warning, [], Child}, _Acc) ->
 tr_erlref ({name, [], [{ret,[],[Ret]}, {nametext,[],[Desc]}]}, _Acc) ->
     {pre, [], [Ret ++ " " ++ Desc]};
 
+tr_erlref ({type, [{variable,_VarName}|_], []}, _Acc) ->
+    ignore;
 tr_erlref ({type, [], Child}, _Acc) ->
     {ul, [{class, "type"}], Child};
 tr_erlref (E={type, [{name,TName}], []}, Acc) ->
@@ -475,16 +477,24 @@ tr_erlref (E={type, [{name,TName}], []}, Acc) ->
                         , {li, [], {code, [], [Child]}} }
     end;
 
-tr_erlref ({name, [{name,Name}, {arity,N}, {clause_i,"1"}], []}, Acc) ->
+tr_erlref ({name, [{name,Name}, {arity,N}, {clause_i,ClauseI}], []}, Acc)
+  when ClauseI =:= "1" ->
     tr_erlref({name, [{name,Name}, {arity,N}], []}, Acc);
+tr_erlref ({name, [{name,____}, {arity,_}, {clause_i,ClauseI}], []}, ___)
+  when ClauseI  >  "1" ->
+    ignore;
 tr_erlref ({name, [{name,Name}, {arity,N}], []}, Acc) ->
     [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
     NName = inc_name(Name, Ids, 0),
     ID = Name ++ "/" ++ N,
     Found = find_spec(Name, N, Types),
     {SpecsFound, Names} = lists:unzip(Found),
-    Specs = merge_specs(SpecsFound),
-    NSpecs = [ {li, [], [{code, [], [Spec]}]} || Spec <- Specs ],
+    Specs = [ {li, [], [{code, [], [Spec]}]}
+              || Spec <- merge_specs(SpecsFound), Spec /= [] ],
+    NSpecs = case Specs of
+                 [] -> [];
+                 _  -> ["\n      ", {ul, [{class,"type_desc"}], Specs}]
+             end,
     Tags = case Names of
                []             ->
                    [{h3, [{id,ID}], [ID]}];
@@ -492,7 +502,7 @@ tr_erlref ({name, [{name,Name}, {arity,N}], []}, Acc) ->
                    [{h3, [{id,ID}], [PName]}]
                        ++ [ {h3, [], [PNameK]} || PNameK <- PNames ]
            end,
-    { Tags ++ ["\n    ", {ul, [{class,"type_desc"}], NSpecs}]
+    { Tags ++ NSpecs
     , [{ids,[NName|Ids]}, List, {functions,[NName|Funs]}, {types,Types}] };
 tr_erlref ({name, [], Child}, Acc) ->
     [{ids,Ids}, List, {functions,Funs}, {types,Types}] = Acc,
