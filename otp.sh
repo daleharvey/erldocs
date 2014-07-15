@@ -5,7 +5,7 @@
 [[ $# -eq 0 ]] && echo "Usage: $0  ‹path to untar'ed OTP›⁺" && exit 1
 
 idir="${1%%/}" # Remove trailing slash if exists
-release="${idir##otp_src_}"
+release="$(basename "$idir" | sed 's/otp_src_//')"
 odir="docs-$release"
 erldocs='./erldocs'
 
