@@ -17,7 +17,7 @@ odir="docs-$release"
 site_root='site.git'
 site="$site_root/$release"
 [[ ! -d "$site" ]] && echo "maint site not found" && exit 1
-archive='site.git/archives/${odir}.tar.bz2'
+archive="$site_root/archives/${odir}.tar.bz2"
 
 
 mkdir -p  "$odir"
@@ -30,7 +30,7 @@ echo "Commencing pull & build of $release branch" \
     && git checkout maint \
     && make clean \
     && git remote update --prune \
-    && ./otp_build autoconf -a $CONFIGURE_OPTIONS \
+    && ./otp_build autoconf  -a $CONFIGURE_OPTIONS \
     && ./otp_build configure -a $CONFIGURE_OPTIONS \
     && ./configure && make
 cd -
