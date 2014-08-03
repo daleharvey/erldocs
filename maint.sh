@@ -5,6 +5,7 @@
 [[ $# -ne 1 ]] && echo "Usage: $0  ‹path to cloned repo›" && exit 1
 idir="${1%%/}" # Remove trailing slash if exists
 [[ ! -d "$idir"/.git ]] && echo "$idir is not a Git repo!" && exit 1
+[[ ! -x "$idir"/otp_build ]] && echo "$idir is not the OTP repo!" && exit 1
 
 erldocs='./erldocs'
 [[ ! -x "$erldocs" ]] && [[ ! -L "$erldocs" ]] && \
@@ -18,14 +19,20 @@ site="$site_root/$release"
 [[ ! -d "$site" ]] && echo "maint site not found" && exit 1
 archive='site.git/archives/${odir}.tar.bz2'
 
-mkdir -p  "$odir" "$idir"
+
+mkdir -p  "$odir"
 rm    -rf "$odir"/*
 
+CONFIGURE_OPTIONS=''
 cd "$idir"
 echo "Commencing pull & build of $release branch" \
+    && rm -rf maint_rel/* \
     && git checkout maint \
-    && git pull origin maint \
-    && make clean all
+    && make clean \
+    && git remote update --prune \
+    && ./otp_build autoconf -a $CONFIGURE_OPTIONS \
+    && ./otp_build configure -a $CONFIGURE_OPTIONS \
+    && ./configure && make
 cd -
 
 includes="-I $idir"/erts/include
@@ -40,12 +47,13 @@ done
     "$idir"/erts    \
     | tee _"$release"
 
-rm -rf "$odir"/.xml
+rm  -rf "$odir"/.xml
 tar jcf "$odir".tar.bz2 "$odir"
 
 rm -rf "$site"
-mv "$odir" "$site"
-mv "odir".tar.bz2 "$archive"
+mv -v  "$odir" "$site"
+mv -v  "$odir".tar.bz2 "$archive"
+mv -v  _"$release" "$site"
 
 cd "$site_root"
 git add "$release" "$archive"
