@@ -47,12 +47,13 @@ done
     "$idir"/erts    \
     | tee _"$release"
 
-rm -rf "$odir"/.xml
+rm  -rf "$odir"/.xml
 tar jcf "$odir".tar.bz2 "$odir"
 
 rm -rf "$site"
-mv "$odir" "$site"
-mv "odir".tar.bz2 "$archive"
+mv -v  "$odir" "$site"
+mv -v  "$odir".tar.bz2 "$archive"
+mv -v  _"$release" "$site"
 
 cd "$site_root"
 git add "$release" "$archive"
