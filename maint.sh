@@ -30,8 +30,8 @@ echo "Commencing pull & build of $release branch" \
     && git checkout maint \
     && make clean \
     && git pull origin maint \
-    && ./otp_build autoconf  -a $CONFIGURE_OPTIONS \
-    && ./otp_build configure -a $CONFIGURE_OPTIONS \
+    && ./otp_build autoconf -a $CONFIGURE_OPTIONS \
+    && ./otp_build configure   $CONFIGURE_OPTIONS \
     && ./configure && make
 cd -
 
