@@ -55,9 +55,10 @@ mv -v  "$odir" "$site"
 mv -v  "$odir".tar.bz2 "$archive"
 mv -v  _"$release" "$site"
 
-cd "$site_root"
-git add "$release" "$archive"
-git commit -m "Updated OTP's $release branch"
-git pull origin gh-pages
-git push origin gh-pages
+cd "$site_root" \
+    && git add "$release" \
+    && git add  archives/ \
+    && git commit -m "Update OTP's $release branch" \
+    && git pull origin gh-pages \
+    && git push origin gh-pages
 cd -
