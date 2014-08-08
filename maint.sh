@@ -23,13 +23,13 @@ archive="$site_root/archives/${odir}.tar.bz2"
 mkdir -p  "$odir"
 rm    -rf "$odir"/*
 
-CONFIGURE_OPTIONS=''
+CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-''}
 cd "$idir"
 echo "Commencing pull & build of $release branch" \
     && rm -rf maint_rel/* \
     && git checkout maint \
     && make clean \
-    && git remote update --prune \
+    && git pull origin maint \
     && ./otp_build autoconf  -a $CONFIGURE_OPTIONS \
     && ./otp_build configure -a $CONFIGURE_OPTIONS \
     && ./configure && make
