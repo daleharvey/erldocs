@@ -397,11 +397,9 @@ tr_erlref ({lib,[],Lib}, _Acc) ->
 tr_erlref ({module,[],Module}, _Acc) ->
     {h1, [], [lists:flatten(Module)]};
 tr_erlref ({modulesummary, [], Child}, _Acc) ->
-    {h2, [{class, "modsummary"}], Child};
+    {h2, [{class,"modsummary"}], Child};
 tr_erlref ({c, [], Child}, _Acc) ->
     {code, [], Child};
-tr_erlref ({section, [], Child}, _Acc) ->
-    {'div', [{class, "section"}], Child};
 tr_erlref ({title, [], Child}, _Acc) ->
     {h4, [], [Child]};
 tr_erlref ({v, [], []}, _Acc) ->
@@ -440,6 +438,15 @@ tr_erlref ({name, [{name,TName},{n_vars,NVars}], []}, Acc) ->
     tr__type_name(TName, NVars, Acc);
 tr_erlref ({name, [{name,TName},{n_vars,_,[NVars]}], []}, Acc) ->
     tr__type_name(TName, NVars, Acc);
+
+tr_erlref ({section, [], [{title,[],["DATA TYPES"]}|Child]}, Acc) ->
+    {taglist, _, Tags} = lists:keyfind(taglist, 1, Child),
+    DTypes = [ [ "\n    "
+               , {'div', [{class,"type"}], [tr__type_name(TName,"0",Acc)]}
+               ] || {item,_,[{marker,[{id,"type-"++TName}|_],_}|_]} <- Tags ],
+    tr__category("Types", "types", DTypes);
+tr_erlref ({section, [], Child}, _Acc) ->
+    {'div', [{class,"section"}], Child};
 
 tr_erlref ({tag, [], Child}, _Acc) ->
     {dt, [], Child};
