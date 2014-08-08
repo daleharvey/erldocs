@@ -14,6 +14,13 @@
 
 %% API
 
+main ([]) ->
+    ok = io:setopts([{encoding, unicode}]),
+    Arg0 = escript:script_name(),
+    io:format("Usage: \n\t~s  "
+              "[-o ‹output dir›]  [-I ‹include path›]⁺  ‹source path›⁺\n",
+              [Arg0]),
+    halt(1);
 main (Args) ->
     parse(Args, #conf{}).
 
