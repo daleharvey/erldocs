@@ -8,7 +8,8 @@
 
 -record(conf, { dirs = []
               , destination = cwd() ++ "/docs/erldocs"
-              , includes = []
+              , includes  = [ cwd() ++ "/include"
+                            , cwd() ]
               }).
 
 %% API
