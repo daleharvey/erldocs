@@ -37,7 +37,11 @@ parse (["-o", Dest | Rest], Conf) ->
 parse (["-I", Include | Rest], #conf{includes = Includes} = Conf) ->
     parse(Rest, Conf#conf{includes = [absp(Include)|Includes]});
 
-parse ([Dir | Rest], #conf{dirs = Dirs} = Conf) ->
+parse ([Dir0 | Rest], #conf{dirs = Dirs} = Conf) ->
+    case Dir0 of
+        "." -> Dir = cwd();
+        _   -> Dir = Dir0
+    end,
     parse(Rest, Conf#conf{dirs = [absp(Dir)|Dirs]}).
 
 
