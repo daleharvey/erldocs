@@ -11,13 +11,16 @@ Erlang/OTP ≥ R13B04
     cd erldocs/
     make
 
-## Usage *Mind the space around the flags!*
+## Usage
+
+***Mind the space around the flags!***
 
     erldocs  [-o ‹output dir›]  [-I ‹include path›]⁺  ‹source path›⁺
 
-Calling the erldocs script with no arguments will generate documentation for the application in the current working directory. The documentation will be output to "doc/erldocs".
+Calling the script to generate documentation for the application in the current working directory:
+this documentation will be output to "./doc/erldocs".
 
-    ./erldocs
+    ./erldocs .
 
 Additional arguments can specify the location to source files to be documented
 
