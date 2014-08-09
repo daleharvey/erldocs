@@ -430,7 +430,7 @@ tr_erlref ({datatype, [], Child}, _Acc) ->
     {'div', [{class,"type"}], Child};
 tr_erlref ({name, [], [{marker,[{id,ID="type-"++_}],Child}|_]}, _Acc) ->
     %% Documented exported opaque types
-    %TODO: extract opaqueness from spec (but that's impossible?)
+    %% Note: opaque types' contents are not described.
     tr__type_name(ID, Child);
 tr_erlref ({name, [{name,TName}], []}, Acc) ->
     tr__type_name(TName, "0", Acc);
@@ -441,9 +441,20 @@ tr_erlref ({name, [{name,TName},{n_vars,_,[NVars]}], []}, Acc) ->
 
 tr_erlref ({section, [], [{title,[],["DATA TYPES"]}|Child]}, Acc) ->
     {taglist, _, Tags} = lists:keyfind(taglist, 1, Child),
-    DTypes = [ [ "\n    "
-               , {'div', [{class,"type"}], [tr__type_name(TName,"0",Acc)]}
-               ] || {item,_,[{marker,[{id,"type-"++TName}|_],_}|_]} <- Tags ],
+    DTypes = [ begin
+                   CompressedName = TName ++ "/0",
+                   case tr__type_name(TName, "0", Acc) of
+                       {h3, [{id,"type-"++TName}], [CompressedName]} ->
+                           %% Did not find type, will use taglist's definition
+                           Defs = [X || {tag,_,[{c,_,[X]}]} <- Tags,
+                                        lists:prefix(TName++"(", X)],
+                           DType = {h3, [{id,"type-"++TName}], [hd(Defs)]};
+                       Found ->
+                           DType = Found
+                   end,
+                   [ "\n    "
+                   , {'div', [{class,"type"}], [DType]} ]
+               end || {item,_,[{marker,[{id,"type-"++TName}|_],_}|_]} <- Tags ],
     tr__category("Types", "types", DTypes);
 tr_erlref ({section, [], Child}, _Acc) ->
     {'div', [{class,"section"}], Child};
