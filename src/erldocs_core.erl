@@ -49,7 +49,7 @@ build (Conf) ->
     filelib:ensure_dir(dest(Conf)),
 
     Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
-    Index = strip_cos(lists:foldl(Fun, [], app_dirs(Conf))),
+    Index = lists:foldl(Fun, [], app_dirs(Conf)),
 
     ok = module_index(Conf, Index),
     ok = javascript_index(Conf, Index),
@@ -108,12 +108,6 @@ build_file_map (Conf, AppName, File) ->
                 false -> [ ["mod", AppName, Module, Sum1] |  Funs]
             end
     end.
-
-%% @doc strip out the cos* files from the index, who the hell needs them
-%% anyway
--spec strip_cos (list()) -> list().
-strip_cos (Index) ->
-    [X || X = [_, App |_] <- Index, not lists:prefix("cos", App)].
 
 ensure_docsrc (Conf, AppDir) ->
     % List any doc/src/*.xml files that exist in the source files
@@ -234,9 +228,9 @@ type_ordering ("mod") -> 2;
 type_ordering ("fun") -> 3.
 
 index_ordering ([Type, App, Mod, _Sum]) ->
-    [string:to_lower(App),
-     type_ordering(Type),
-     string:to_lower(Mod)].
+    [ string:to_lower(App)
+    , type_ordering(Type)
+    , string:to_lower(Mod) ].
 
 sort_index (A, B) ->
     index_ordering(A) =< index_ordering(B).
@@ -713,10 +707,8 @@ read_xml (_Conf, XmlFile) ->
 fmt (Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
-log (Str) ->
-    ?LOG(Str).
-log (Str, Args) ->
-    ?LOG(Str, Args).
+log (Str) ->       ?LOG(Str).
+log (Str, Args) -> ?LOG(Str, Args).
 
 %% @doc shorthand for lists:keyfind
 -spec kf (term(), list()) -> term().
