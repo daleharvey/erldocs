@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8"/>
-    <title>{{ title }} - erldocs.com (Erlang Documentation)</title>
-    <link rel="search" type="application/opensearchdescription+xml" title="erldocs" href="/search.xml"/>
-    <link type="text/css" rel="stylesheet" href="{{ base }}erldocs.css"/>
+    <title>{{ title }} (Erlang Documentation)</title>
+    <link href="{{ base }}erldocs.css" type="text/css" rel="stylesheet"/>
+    <link href="/search.xml" rel="search" type="application/opensearchdescription+xml" title="erldocs"/>
 
     <script type="text/javascript">
       var _gaq = _gaq || [];
