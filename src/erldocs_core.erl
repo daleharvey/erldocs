@@ -370,20 +370,47 @@ app_dirs (Conf) ->
     lists:foldl(Fun, [], kf(apps, Conf)).
 
 'add .html' ("#"++Rest) ->
-    "#"++Rest;
+    "#"++ separate_f_from_a(Rest);
 'add .html' (Link) ->
     case string:tokens(Link, "#") of
         [Tmp]    -> Tmp++".html";
-        [N1, N2] -> lists:flatten([N1, ".html#", N2])
+        [N1, N2] -> lists:flatten([N1, ".html#", separate_f_from_a(N2)])
     end.
+
+tr__marker (FdashA) ->
+    %% When Marker denotes "function-arity", replace its - with a /.
+    Mark = separate_f_from_a(FdashA),
+    case FdashA =:= Mark of
+        true  -> {span, [{id,Mark}], [" "]};
+        false -> ignore
+    end.
+
+separate_f_from_a (FdashA) ->
+    separate_f_from_a(lists:reverse(FdashA), [], []).
+separate_f_from_a ([], Arity, AccF0) ->
+    AccF = lists:reverse(AccF0),
+    case Arity of
+        [] -> AccF;
+        _  -> AccF ++"/"++ Arity
+    end;
+separate_f_from_a ([C|Rest], AccA, []) ->
+    case C of
+        _  when $0 =< C andalso C =< $9 ->
+            separate_f_from_a(Rest, [C|AccA], []);
+        $- ->
+            separate_f_from_a([],      AccA,  Rest);
+        _  ->
+            separate_f_from_a([],      AccA,  [C|Rest])
+end.
+
 
 %% Transforms erlang xml format to html
 tr_erlref (Element) ->
     tr_erlref(Element, ignore_acc).
 tr_erlref ({header,[],_Child}, _Acc) ->
     ignore;
-tr_erlref ({marker, [{id, Marker}], []}, _Acc) ->
-    {span, [{id, Marker}], [" "]};
+tr_erlref ({marker, [{id,Marker}], []}, _Acc) ->
+    tr__marker(Marker);
 tr_erlref ({term,[{id, Term}], _Child}, _Acc) ->
     Term;
 tr_erlref ({lib,[],Lib}, _Acc) ->
