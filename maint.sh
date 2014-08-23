@@ -50,10 +50,10 @@ done
 rm  -rf "$odir"/.xml
 tar jcf "$odir".tar.bz2 "$odir"
 
-rm -vrf "$site"
-mv -v   "$odir" "$site"
-mv -v   "$odir".tar.bz2 "$archive"
-mv -v   _"$release" "$site"/log-"$release".txt
+rm -rf "$site"
+mv -v  "$odir" "$site"
+mv -v  "$odir".tar.bz2 "$archive"
+mv -v  _"$release" "$site"/log-"$release".txt
 
 cd "$site_root" \
     && git add "$release" \
