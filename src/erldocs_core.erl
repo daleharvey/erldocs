@@ -39,21 +39,29 @@ dispatch (Conf) ->
     build(Conf),
     Diff = timer:now_diff(erlang:now(), Start),
     Mins = trunc(Diff * 1.667e-8),
+    Secs = trunc(Diff * 1.000e-6 - Mins * 60),
     log("Woot, finished in ~p Minutes ~p Seconds~n",
-        [Mins, trunc((Diff * 1.0e-6) - (Mins * 60))]).
+        [Mins, Secs]).
 
 
 %% @doc Build everything
 -spec build (list()) -> ok.
 build (Conf) ->
-    filelib:ensure_dir(dest(Conf)),
+    ok = filelib:ensure_dir(dest(Conf)),
 
     Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
     Index = lists:foldl(Fun, [], app_dirs(Conf)),
 
-    ok = module_index(Conf, Index),
-    ok = javascript_index(Conf, Index),
-    ok = copy_static_files(Conf).
+    case length(kf(apps,Conf)) == length(Index) of
+        true  ->
+            %% Only the "[application]" (inserted by build_apps/3) are present
+            %% in Index, thus:
+            log("No documentation was generated!\n");
+        false ->
+            ok = module_index(Conf, Index),
+            ok = javascript_index(Conf, Index),
+            ok = copy_static_files(Conf)
+    end.
 
 build_apps (Conf, App, Index) ->
     AppName = bname(App),
@@ -125,7 +133,7 @@ ensure_docsrc (Conf, AppDir) ->
     % Output XML files to destination folder
     % This prevents polluting the source files
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
-    filelib:ensure_dir(XMLDir ++ "/"),
+    ok = filelib:ensure_dir(XMLDir ++ "/"),
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
     SpecsIncludes =
