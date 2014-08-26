@@ -33,6 +33,11 @@ echo "Commencing pull & build of $release branch" \
     && ./otp_build autoconf -a $CONFIGURE_OPTIONS \
     && ./otp_build configure   $CONFIGURE_OPTIONS \
     && ./configure && make
+if [[ $? -ne 0 ]]; then
+    echo "Could not make $release"
+    cd -
+    exit 2
+fi
 cd -
 
 includes="-I $idir"/erts/include
