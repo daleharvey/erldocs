@@ -473,11 +473,14 @@ tr_erlref ({section, [], [{title,[],["DATA TYPES"]}|Child]}, Acc) ->
     DTypes = [ begin
                    CompressedName = TName ++ "/0",
                    case tr__type_name(TName, "0", Acc) of
-                       {h3, [{id,"type-"++TName}], [CompressedName]} ->
+                       {h3, [{id,"type-"++TName}], [CompressedName]} = NotFound ->
                            %% Did not find type, will use taglist's definition
                            Defs = [X || {tag,_,[{c,_,[X]}]} <- Tags,
                                         lists:prefix(TName++"(", X)],
-                           DType = {h3, [{id,"type-"++TName}], [hd(Defs)]};
+                           case Defs of
+                               [] -> DType = NotFound;
+                               _  -> DType = {h3, [{id,"type-"++TName}], [hd(Defs)]}
+                           end;
                        Found ->
                            DType = Found
                    end,

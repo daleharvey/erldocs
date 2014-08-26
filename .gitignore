@@ -4,7 +4,3 @@ ebin
 
 erl.mk
 erldocs
-
-priv/www
-!/priv/www/index.html
-

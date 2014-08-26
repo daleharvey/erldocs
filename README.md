@@ -7,8 +7,8 @@ Erlang/OTP ≥ R13B04
 
 ## Building
 
-    git clone git://github.com/fenollp/erldocs.git
-    cd erldocs/
+    git clone git://github.com/erldocs/erldocs.git erldocs.git
+    cd erldocs.git/
     make
 
 ## Usage
