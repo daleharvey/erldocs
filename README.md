@@ -7,9 +7,11 @@ Erlang/OTP ≥ R13B04
 
 ## Building
 
-    git clone git://github.com/erldocs/erldocs.git erldocs.git
+    git clone https://github.com/erldocs/erldocs.git erldocs.git
     cd erldocs.git/
     make
+
+An [escript](http://www.erlang.org/doc/man/escript.html) called `erldocs` will thus be generated.
 
 ## Usage
 
@@ -36,4 +38,4 @@ Specify paths to include files with `-I ‹path to include file1›`
 
 To build Erlang|OTP's docs the same way [erldocs.com](http://erldocs.com/) builds them:
 
-    ./otp.sh otp_src_17.0
+    ./otp.sh otp_src_17.0/
