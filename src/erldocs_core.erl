@@ -47,7 +47,7 @@ dispatch (Conf) ->
 %% @doc Build everything
 -spec build (list()) -> ok.
 build (Conf) ->
-    ok = filelib:ensure_dir(dest(Conf)),
+    filelib:ensure_dir(dest(Conf)),
 
     Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
     Index = lists:foldl(Fun, [], app_dirs(Conf)),
@@ -133,7 +133,7 @@ ensure_docsrc (Conf, AppDir) ->
     % Output XML files to destination folder
     % This prevents polluting the source files
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
-    ok = filelib:ensure_dir(XMLDir ++ "/"),
+    filelib:ensure_dir(XMLDir ++ "/"),
 
     SpecsDest = filename:join([dest(Conf), ".xml"]),
     SpecsIncludes =
