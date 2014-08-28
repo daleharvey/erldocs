@@ -10,6 +10,7 @@
               , destination = cwd() ++ "/docs/erldocs"
               , includes  = [ cwd() ++ "/include"
                             , cwd() ]
+              , ga = "UA-44246018-1"
               }).
 
 %% API
@@ -49,7 +50,10 @@ parse ([Dir0 | Rest], #conf{dirs = Dirs} = Conf) ->
         "." -> Dir = cwd();
         _   -> Dir = Dir0
     end,
-    parse(Rest, Conf#conf{dirs = [absp(Dir)|Dirs]}).
+    parse(Rest, Conf#conf{dirs = [absp(Dir)|Dirs]});
+
+parse (["--ga", GA | Rest], Conf) ->
+    parse(Rest, Conf#conf{ga = GA}).
 
 
 run (Conf) ->

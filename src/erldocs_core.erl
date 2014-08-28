@@ -214,7 +214,8 @@ module_index (Conf, Index) ->
     Args = [ {base,    "./"}
            , {title,   "Module Index"}
            , {content, Html}
-           , {funs,    ""} ],
+           , {funs,    ""}
+           , {ga,      kf(ga,Conf)} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file([dest(Conf), "/index.html"], Data).
