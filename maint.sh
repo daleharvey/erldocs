@@ -51,6 +51,7 @@ done
     "$idir"/lib/*   \
     "$idir"/erts    \
     | tee _"$release"
+[[ $? -ne 0 ]] && exit 3
 
 rm  -rf "$odir"/.xml
 tar jcf "$odir".tar.bz2 "$odir"
