@@ -28,15 +28,14 @@ main (Args) ->
 %% Internals
 
 parse ([], Conf) ->
-    Destination    = Conf#conf.destination,
-    Includes       = Conf#conf.includes,
     case Conf#conf.dirs of
       []   -> Dirs = [cwd()];
       Else -> Dirs = Else
     end,
     PropList = [ {apps, Dirs}
-               , {dest, absp(Destination)}
-               , {incs, Includes} ],
+               , {dest, absp(Conf#conf.destination)}
+               , {incs, Conf#conf.includes}
+               , {ga,   Conf#conf.ga} ],
     run(PropList);
 
 parse (["-o", Dest | Rest], Conf) ->
