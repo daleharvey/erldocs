@@ -289,8 +289,9 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
 
     Args = [ {base,    "../"}
            , {title,   Mod ++ " (" ++ App ++ ") - "}
-           , {content, xml_to_str(NXml)} ],
-%%         , {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})} ],
+           , {content, xml_to_str(NXml)}
+%%         , {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})}
+           , {ga,      kf(ga,Conf)} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(File, Data).
