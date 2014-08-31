@@ -172,10 +172,9 @@ gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
     lists:foldl(
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
-              DestFile = filename:join([Dest,Basename]) ++ ".xml",
+              DestFile = filename:join([Dest, Basename++".xml"]),
               log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
-              AbsInclude = filename:dirname(File) ++ "/../include",
-              Options = [ {includes, [AbsInclude | AppDirIncludes]}
+              Options = [ {includes, keep_existings(AppDirIncludes)}
                         , {dir, filename:dirname(DestFile)}
                         | Opts],
               case (catch edoc:file(File, Options)) of
@@ -186,6 +185,9 @@ gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
                       Acc
               end
       end, [], SrcFiles).
+
+keep_existings (AppDirIncludes) ->
+    [Include || Include <- AppDirIncludes, filelib:is_dir(Include)].
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
