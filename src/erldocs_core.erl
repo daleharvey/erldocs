@@ -106,7 +106,7 @@ build_file_map (Conf, AppName, File) ->
 
             Sum1 = lists:flatten(Sum2),
 
-            % strip silly shy characters
+            %% strip silly shy characters
             Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
 
             ok = render(Type, AppName, Module, Content, TypeSpecs, Conf),
@@ -118,65 +118,66 @@ build_file_map (Conf, AppName, File) ->
     end.
 
 ensure_docsrc (Conf, AppDir) ->
-    % List any doc/src/*.xml files that exist in the source files
+    %% List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
 
     ErlFiles = filelib:wildcard(filename:join([AppDir,        "*.erl"]))
         ++     filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
 
-    % Generate any missing module XML
+    %% Generate any missing module XML
     SrcFiles = [filename:absname(File) ||
                    File <- ErlFiles,
                    not lists:member(bname(File, ".erl"), HandWritten)],
 
-    % Output XML files to destination folder
-    % This prevents polluting the source files
+    %% Output XML files to destination folder
+    %% This prevents from polluting the source files
     XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
     filelib:ensure_dir(XMLDir ++ "/"),
 
+    case erlang:system_info(otp_release) of
+        "R"++Old when Old < "15" -> SpecsGenModule = specs_gen__below_R15;
+        _ ->                        SpecsGenModule = specs_gen__R15_and_above
+    end,
     SpecsDest = filename:join([dest(Conf), ".xml"]),
-    SpecsIncludes =
-        ["-I"++Inc || Inc <- [filename:join(AppDir,"include")|kf(incs,Conf)]],
-    SpecsGenModule =
-        case erlang:system_info(otp_release) of
-            "R"++Old when Old < "15" -> specs_gen__below_R15;
-            _ ->                        specs_gen__R15_and_above
-        end,
+    IncFiles = includes(Conf, AppDir),
+    SpecsIncludes = ["-I"++Inc || Inc <- IncFiles],
     [ begin
           log("Generating Type Specs - ~p\n", [File]),
           Args = ["-o"++SpecsDest] ++ SpecsIncludes ++ [File],
           try SpecsGenModule:main(Args)
-          catch _:SpecsGenError ->
-                  log("Error generating type specs:\n~p\n~p\n",
-                      [SpecsGenError, erlang:get_stacktrace()])
+          catch _:_SpecsGenError ->
+                  log("Error generating type specs for ~p\n", [File])
           end
       end || File <- ErlFiles],
 
     %% Return the complete list of XML files
-    XMLFiles
-        ++ tmp_cd(XMLDir,
-                  fun () -> gen_docsrc(Conf, AppDir, SrcFiles, XMLDir) end).
+    XMLFiles ++ tmp_cd(XMLDir, fun () ->
+                                       gen_docsrc(SrcFiles, IncFiles, XMLDir)
+                               end).
 
 
-gen_docsrc (Conf, AppDir, SrcFiles, Dest) ->
-    AppDirIncludes = lists:append([ [AppDir ++ "/include"] %% Those ones usually don't work!
-                                  , filelib:wildcard(AppDir)
-                                  , kf(incs, Conf) ]),
-    Opts = [ {sort_functions, false}
+includes (Conf, AppDir) ->
+    keep_existings([ filename:dirname(AppDir)
+                   , filename:join(filename:dirname(AppDir), "include")
+                     %% These 2 in case of a non-regular architecture:
+                   , AppDir%%
+                   , filename:join(filename:dirname(AppDir), "src")%%
+                     | kf(incs,Conf) ]).
+
+
+gen_docsrc (SrcFiles, IncFiles, Dest) ->
+    Opts = [ {includes, IncFiles}
+           , {sort_functions, false}
            , {layout, docgen_edoc_xml_cb}
            , {file_suffix, ".xml"}
-           , {preprocess, true}
-           ],
-
+           , {preprocess, true} ],
     lists:foldl(
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
               DestFile = filename:join([Dest, Basename++".xml"]),
               log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
-              Options = [ {includes, keep_existings(AppDirIncludes)}
-                        , {dir, filename:dirname(DestFile)}
-                        | Opts],
+              Options = [ {dir, filename:dirname(DestFile)} | Opts],
               case (catch edoc:file(File, Options)) of
                   ok ->
                       [DestFile | Acc];
