@@ -10,6 +10,7 @@
               , destination = cwd() ++ "/docs/erldocs"
               , includes  = [ cwd() ++ "/include"
                             , cwd() ]
+              , base = "./"
               , ga = "UA-44246018-1"
               }).
 
@@ -35,6 +36,7 @@ parse ([], Conf) ->
     PropList = [ {apps, Dirs}
                , {dest, absp(Conf#conf.destination)}
                , {incs, Conf#conf.includes}
+               , {base, Conf#conf.base}
                , {ga,   Conf#conf.ga} ],
     run(PropList);
 
@@ -43,6 +45,9 @@ parse (["-o", Dest | Rest], Conf) ->
 
 parse (["-I", Include | Rest], #conf{includes = Includes} = Conf) ->
     parse(Rest, Conf#conf{includes = [absp(Include)|Includes]});
+
+parse (["--base", Base | Rest], Conf) ->
+    parse(Rest, Conf#conf{base = Base});
 
 parse (["--ga", GA | Rest], Conf) ->
     parse(Rest, Conf#conf{ga = GA});

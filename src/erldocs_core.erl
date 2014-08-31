@@ -211,7 +211,8 @@ module_index (Conf, Index) ->
     Html = "<h1>Module Index</h1><hr/><br/><div>"
         ++      xml_to_str(emit_index(Index))
         ++ "</div>",
-    Args = [ {base,    "./"}
+    Args = [ {base,    kf(base,Conf)}
+           , {search_base, "./"}
            , {title,   "Module Index"}
            , {content, Html}
            , {funs,    ""}
@@ -287,7 +288,8 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
 %%  XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
 %%              || X <- lists:reverse(Funs) ],
 
-    Args = [ {base,    "../"}
+    Args = [ {base,    kf(base,Conf)}
+           , {search_base, "../"}
            , {title,   Mod ++ " (" ++ App ++ ") - "}
            , {content, xml_to_str(NXml)}
 %%         , {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})}

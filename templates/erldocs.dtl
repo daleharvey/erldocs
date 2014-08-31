@@ -26,18 +26,18 @@
       <div style="margin:0px; padding:10px 20px;">
         {{ content }}
       </div>
-      <!-- <div id="funwrapper"> -->
+{#    <!-- <div id="funwrapper"> -->
       <!--   <a id="viewfuns">View Functions</a> -->
       <!--   {{ funs }} -->
       <!-- </div> -->
-    </div>
+#}  </div>
 
     <script type="text/javascript">
-      var CURRENT_ROOT = "{{ base }}";
+      var CURRENT_ROOT = "{{ search_base }}";
     </script>
 
-    <script type="text/javascript" src="{{ base }}jquery.js"></script>
-    <script type="text/javascript" src="{{ base }}erldocs_index.js"></script>
-    <script type="text/javascript" src="{{ base }}erldocs.js"></script>
+    <script type="text/javascript" src="{{        base }}jquery.js"></script>
+    <script type="text/javascript" src="{{ search_base }}erldocs_index.js"></script>
+    <script type="text/javascript" src="{{        base }}erldocs.js"></script>
   </body>
 </html>
