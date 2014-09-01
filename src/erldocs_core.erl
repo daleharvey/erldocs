@@ -291,7 +291,12 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
 %%  XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
 %%              || X <- lists:reverse(Funs) ],
 
-    Args = [ {base,    kf(base,Conf)}
+    case kf(base,Conf) of %this is awkward
+        "./" ->  %% Default value. In the default case
+            Base = "../";  %% … files are up one leve.
+        Other -> Base = Other
+    end,
+    Args = [ {base,    Base}
            , {search_base, "../"}
            , {title,   Mod ++ " (" ++ App ++ ") - "}
            , {content, xml_to_str(NXml)}
