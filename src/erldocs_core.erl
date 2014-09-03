@@ -160,11 +160,13 @@ ensure_docsrc (Conf, AppDir) ->
 includes (Conf, AppDir) ->
     Above_AppDir = filename:dirname(AppDir),
     keep_existings([ Above_AppDir
-                     %% Those 2 look suspicious (FIXME)
+                     %% Those 3 look suspicious (FIXME)
                    , filename:join(Above_AppDir, "include")
                    , filename:join(Above_AppDir, "deps")
+                   , filename:join(Above_AppDir, "lib")
                    , filename:join(AppDir, "include")
                    , filename:join(AppDir, "deps")
+                   , filename:join(AppDir, "lib")
                      %% These 2 in case of a non-regular architecture:
                    , AppDir%%
                    , filename:join(Above_AppDir, "src")%%
