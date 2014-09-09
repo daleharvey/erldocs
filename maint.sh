@@ -62,6 +62,7 @@ mv -v  "$odir".tar.bz2 "$archive"
 mv -v  _"$release" "$site"/log-"$release".txt
 
 modifs=$(cd "$site_root" && git status --porcelain | wc -l)
+git status --porcelain
 [[ "$modifs" -eq 2 ]] && echo "No interesting changes to push." && exit 0
 cd "$site_root" \
     && git add "$release" \
