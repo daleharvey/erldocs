@@ -1,5 +1,4 @@
 all: erl.mk
-	$(MAKE) $(APP)
 	$(MAKE) escript
 
 erl.mk:
