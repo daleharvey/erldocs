@@ -177,21 +177,38 @@ gen_docsrc (SrcFiles, IncFiles, Dest) ->
            , {sort_functions, false}
            , {file_suffix, ".xml"}
            , {preprocess, true}
+           , {dir, Dest}
            , {layout, docgen_edoc_xml_cb} ],
-    lists:foldl(
-      fun (File, Acc) ->
-              Basename = bname(File, ".erl"),
-              DestFile = filename:join([Dest, Basename++".xml"]),
-              ?log("Generating XML - ~s ~p -> ~p", [Basename,File,DestFile]),
-              Options = [ {dir, dname(DestFile)} | Opts],
-              case (catch edoc:file(File, Options)) of
-                  ok ->
-                      [DestFile | Acc];
-                  Error ->
-                      ?log("Error generating XML (~p): ~p", [File,Error]),
-                      Acc
-              end
-      end, [], SrcFiles).
+
+    AppDir  = dname(dname(hd(SrcFiles))),
+    AppName = bname(AppDir),
+    ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
+    case (catch edoc:application(list_to_atom(AppName), AppDir, Opts)) of
+        ok ->
+            Accr = fun (Filename, Acc) -> [Filename|Acc] end,
+            XmlFiles = filelib:fold_files(Dest, ".+\\.xml$", false, Accr, []),
+            ?log("Generated ~s XMLs: ~p", [AppName, XmlFiles]),
+            XmlFiles;
+
+        _Error ->
+            ?log("Error generating ~s XMLs. Using fallback ...", [AppName]),
+            lists:foldl(
+              fun (File, Acc) ->
+                      Basename = bname(File, ".erl"),
+                      DestFile = filename:join(Dest, Basename++".xml"),
+                      ?log("Generating XML ~s - ~s ~p -> ~p",
+                           [AppName,Basename,File,DestFile]),
+                      case (catch edoc:file(File, Opts)) of
+                          ok ->
+                              [DestFile | Acc];
+                          Error ->
+                              ?log("Error generating XML (~p): ~p",
+                                   [File,Error]),
+                              Acc
+                      end
+              end, [], SrcFiles)
+    end.
+
 
 keep_existings (AppDirIncludes) ->
     [Include || Include <- AppDirIncludes, filelib:is_dir(Include)].
