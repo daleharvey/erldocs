@@ -14,8 +14,8 @@
 
 -include_lib("kernel/include/file.hrl").
 
--define(LOG(Str, Args), io:format(Str, Args)).
--define(LOG(Str),       io:format(Str)).
+-define(log(Str, Args), io:format(Str++"\n", Args)).
+-define(log(Str),       io:format(Str++"\n")).
 
 %% API
 
@@ -40,8 +40,7 @@ dispatch (Conf) ->
     Diff = timer:now_diff(erlang:now(), Start),
     Mins = trunc(Diff * 1.667e-8),
     Secs = trunc(Diff * 1.000e-6 - Mins * 60),
-    log("Woot, finished in ~p Minutes ~p Seconds~n",
-        [Mins, Secs]).
+    ?log("Woot, finished in ~p Minutes ~p Seconds", [Mins, Secs]).
 
 
 %% @doc Build everything
@@ -56,7 +55,7 @@ build (Conf) ->
         true  ->
             %% Only the "[application]" (inserted by build_apps/3) are present
             %% in Index, thus:
-            log("No documentation was generated!\n");
+            ?log("No documentation was generated!");
         false ->
             ok = module_index(Conf, Index),
             ok = javascript_index(Conf, Index),
@@ -65,14 +64,14 @@ build (Conf) ->
 
 build_apps (Conf, App, Index) ->
     AppName = bname(App),
-    log("Building ~s~n", [AppName]),
+    ?log("Building ~s", [AppName]),
     Files   = ensure_docsrc(Conf, App),
     Map = fun (F) -> build_file_map(Conf, AppName, F) end,
     [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map (Conf, AppName, File) ->
-    log("Generating HTML - ~s ~p\n", [bname(File, ".xml"), File]),
+    ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
     TypeSpecsFile = filename:join([dest(Conf), ".xml", "specs_" ++ bname(File)]),
@@ -143,11 +142,11 @@ ensure_docsrc (Conf, AppDir) ->
     IncFiles = includes(Conf, AppDir),
     SpecsIncludes = ["-I"++Inc || Inc <- IncFiles],
     [ begin
-          log("Generating Type Specs - ~p\n", [File]),
+          ?log("Generating Type Specs - ~p", [File]),
           Args = ["-o"++SpecsDest] ++ SpecsIncludes ++ [File],
           try SpecsGenModule:main(Args)
           catch _:_SpecsGenError ->
-                  log("Error generating type specs for ~p\n", [File])
+                  ?log("Error generating type specs for ~p", [File])
           end
       end || File <- ErlFiles],
 
@@ -183,13 +182,13 @@ gen_docsrc (SrcFiles, IncFiles, Dest) ->
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
               DestFile = filename:join([Dest, Basename++".xml"]),
-              log("Generating XML - ~s ~p -> ~p\n", [Basename,File,DestFile]),
+              ?log("Generating XML - ~s ~p -> ~p", [Basename,File,DestFile]),
               Options = [ {dir, filename:dirname(DestFile)} | Opts],
               case (catch edoc:file(File, Options)) of
                   ok ->
                       [DestFile | Acc];
                   Error ->
-                      log("Error generating XML (~p): ~p~n", [File, Error]),
+                      ?log("Error generating XML (~p): ~p", [File,Error]),
                       Acc
               end
       end, [], SrcFiles).
@@ -216,7 +215,7 @@ tmp_cd (Dir, Fun) ->
 
 
 module_index (Conf, Index) ->
-    log("Creating index.html ...~n"),
+    ?log("Creating index.html ..."),
 
     Html = "<h1>Module Index</h1><hr/><br/><div>"
         ++      xml_to_str(emit_index(Index))
@@ -259,8 +258,7 @@ html_encode (Str)  ->
     [C || C <- Str, C /= $'].
 
 javascript_index (Conf, FIndex) ->
-
-    log("Creating erldocs_index.js ...~n"),
+    ?log("Creating erldocs_index.js ..."),
 
     F = fun ([Else, App, NMod, Sum]) ->
                 [Else, App, NMod, fmt("~ts", [string:substr(Sum, 1, 50)])]
@@ -287,7 +285,7 @@ render (cref, App, Mod, Xml, Types, Conf) ->
 
 render (erlref, App, Mod, Xml, Types, Conf) ->
 
-    File = filename:join([dest(Conf), App, Mod ++ ".html"]),
+    File = filename:join([dest(Conf), App, Mod++".html"]),
     ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
 
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
@@ -747,7 +745,7 @@ htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 %% source directory because files are addressed relative to it
 -spec read_xml (list(), list()) -> tuple().
 read_xml (_Conf, XmlFile) ->
-    log("Reading XML for ~p\n", [XmlFile]),
+    ?log("Reading XML for ~p", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
     Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
                           , filename:join(DocgenDir, "dtd_html_entities") ]}
@@ -756,16 +754,13 @@ read_xml (_Conf, XmlFile) ->
         {Xml, _Rest} ->
             xmerl_lib:simplify_element(Xml);
         Error ->
-            log("Error in read_xml File ~p Erro ~p\n", [XmlFile, Error]),
+            ?log("Error in read_xml File ~p Erro ~p", [XmlFile,Error]),
             throw({error_in_read_xml, XmlFile, Error})
     end.
 
 %% lazy shorthand
 fmt (Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
-
-log (Str) ->       ?LOG(Str).
-log (Str, Args) -> ?LOG(Str, Args).
 
 %% @doc shorthand for lists:keyfind
 -spec kf (term(), list()) -> term().
