@@ -157,7 +157,7 @@ ensure_docsrc (Conf, AppDir) ->
 
 
 includes (Conf, AppDir) ->
-    Above_AppDir = filename:dirname(AppDir),
+    Above_AppDir = dname(AppDir),
     keep_existings([ Above_AppDir
                      %% Those 3 look suspicious (FIXME)
                    , filename:join(Above_AppDir, "include")
@@ -175,15 +175,15 @@ includes (Conf, AppDir) ->
 gen_docsrc (SrcFiles, IncFiles, Dest) ->
     Opts = [ {includes, IncFiles}
            , {sort_functions, false}
-           , {layout, docgen_edoc_xml_cb}
            , {file_suffix, ".xml"}
-           , {preprocess, true} ],
+           , {preprocess, true}
+           , {layout, docgen_edoc_xml_cb} ],
     lists:foldl(
       fun (File, Acc) ->
               Basename = bname(File, ".erl"),
               DestFile = filename:join([Dest, Basename++".xml"]),
               ?log("Generating XML - ~s ~p -> ~p", [Basename,File,DestFile]),
-              Options = [ {dir, filename:dirname(DestFile)} | Opts],
+              Options = [ {dir, dname(DestFile)} | Opts],
               case (catch edoc:file(File, Options)) of
                   ok ->
                       [DestFile | Acc];
@@ -286,7 +286,7 @@ render (cref, App, Mod, Xml, Types, Conf) ->
 render (erlref, App, Mod, Xml, Types, Conf) ->
 
     File = filename:join([dest(Conf), App, Mod++".html"]),
-    ok   = filelib:ensure_dir(filename:dirname(File) ++ "/"),
+    ok   = filelib:ensure_dir(dname(File) ++ "/"),
 
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
@@ -777,6 +777,9 @@ bname (Name) ->
     filename:basename(Name).
 bname (Name, Ext) ->
     filename:basename(Name, Ext).
+
+dname (Name) ->
+    filename:dirname(Name).
 
 % List of the type of xml files erldocs can build
 buildable () ->

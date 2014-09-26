@@ -34,7 +34,7 @@ parse ([], Conf) ->
       Else -> Dirs = Else
     end,
     PropList = [ {apps, Dirs}
-               , {dest, absp(Conf#conf.destination)}
+               , {dest, aname(Conf#conf.destination)}
                , {incs, Conf#conf.includes}
                , {base, Conf#conf.base}
                , {ga,   Conf#conf.ga} ],
@@ -44,7 +44,7 @@ parse (["-o", Dest | Rest], Conf) ->
     parse(Rest, Conf#conf{destination = Dest});
 
 parse (["-I", Include | Rest], #conf{includes = Includes} = Conf) ->
-    parse(Rest, Conf#conf{includes = [absp(Include)|Includes]});
+    parse(Rest, Conf#conf{includes = [aname(Include)|Includes]});
 
 parse (["--base", Base | Rest], Conf) ->
     parse(Rest, Conf#conf{base = Base});
@@ -57,7 +57,7 @@ parse ([Dir0 | Rest], #conf{dirs = Dirs} = Conf) ->
         "." -> Dir = cwd();
         _   -> Dir = Dir0
     end,
-    parse(Rest, Conf#conf{dirs = [absp(Dir)|Dirs]}).
+    parse(Rest, Conf#conf{dirs = [aname(Dir)|Dirs]}).
 
 
 run (Conf) ->
@@ -67,7 +67,7 @@ run (Conf) ->
                 [erlang:get_stacktrace(), {Type, Error}])
     end.
 
-absp (Filename) ->
+aname (Filename) ->
     filename:absname(Filename).
 
 log (Str, Args) ->
