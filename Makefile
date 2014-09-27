@@ -8,7 +8,7 @@ dep_erlydtl = git://github.com/erlydtl/erlydtl.git master
 
 ERLCFLAGS += +debug_info
 
-include erl.mk
+-include erl.mk
 
 # Your targets after this line.
 
@@ -17,4 +17,5 @@ clean: clean-ebin
 distclean: clean clean-escript clean-deps
 	$(if $(wildcard erl.mk), rm erl.mk   )
 	$(if $(wildcard docs/), rm -rf docs/ )
-.PHONY: distclean
+
+.PHONY: clean distclean

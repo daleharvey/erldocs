@@ -62,10 +62,10 @@ build (Conf) ->
             ok = copy_static_files(Conf)
     end.
 
-build_apps (Conf, App, Index) ->
-    AppName = bname(App),
+build_apps (Conf, AppDir, Index) ->
+    AppName = bname(AppDir),
     ?log("Building ~s", [AppName]),
-    Files   = ensure_docsrc(Conf, App),
+    Files   = ensure_docsrc(Conf, AppDir),
     Map = fun (F) -> build_file_map(Conf, AppName, F) end,
     [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
@@ -152,7 +152,7 @@ ensure_docsrc (Conf, AppDir) ->
 
     %% Return the complete list of XML files
     XMLFiles ++ tmp_cd(XMLDir, fun () ->
-                                       gen_docsrc(SrcFiles, IncFiles, XMLDir)
+                                       gen_docsrc(AppDir, SrcFiles, IncFiles, XMLDir)
                                end).
 
 
@@ -172,7 +172,7 @@ includes (Conf, AppDir) ->
                      | kf(incs,Conf) ]).
 
 
-gen_docsrc (SrcFiles, IncFiles, Dest) ->
+gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
     Opts = [ {includes, IncFiles}
            , {sort_functions, false}
            , {file_suffix, ".xml"}
@@ -180,7 +180,6 @@ gen_docsrc (SrcFiles, IncFiles, Dest) ->
            , {dir, Dest}
            , {layout, docgen_edoc_xml_cb} ],
 
-    AppDir  = dname(dname(hd(SrcFiles))),
     AppName = bname(AppDir),
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
     case (catch edoc:application(list_to_atom(AppName), AppDir, Opts)) of
@@ -227,7 +226,7 @@ tmp_cd (Dir, Fun) ->
     catch
         Type:Err ->
             ok = file:set_cwd(OldDir),
-            throw({Type, Err})
+            throw({Type, Err, erlang:get_stacktrace()})
     end.
 
 
