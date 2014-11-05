@@ -178,6 +178,7 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
            , {file_suffix, ".xml"}
            , {preprocess, true}
            , {dir, Dest}
+           , {packages, false}  %% Find modules in subfolders of src/
            , {layout, docgen_edoc_xml_cb} ],
 
     AppName = bname(AppDir),
