@@ -19,3 +19,6 @@ distclean: clean clean-escript clean-deps
 
 test:
 	./test/test.sh /tmp/erldocs.git
+
+dialyze: app
+	dialyzer --src src/ --plt ~/.dialyzer_plt --no_native  -Werror_handling -Wrace_conditions -Wunmatched_returns -Wunderspecs

@@ -33,18 +33,19 @@ copy_static_files (Conf) ->
 
 %% @doc Parses arguments passed to script and calls
 %% appropriate function.
--spec dispatch (list()) -> ok.
+-spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
     Start = erlang:now(),
-    build(Conf),
+    DidBuild = build(Conf),
     Diff = timer:now_diff(erlang:now(), Start),
     Mins = trunc(Diff * 1.667e-8),
     Secs = trunc(Diff * 1.000e-6 - Mins * 60),
-    ?log("Woot, finished in ~p Minutes ~p Seconds", [Mins, Secs]).
+    ?log("Woot, finished in ~p Minutes ~p Seconds", [Mins, Secs]),
+    DidBuild.
 
 
 %% @doc Build everything
--spec build (list()) -> ok.
+-spec build (list()) -> boolean().
 build (Conf) ->
     filelib:ensure_dir(dest(Conf)),
 
@@ -55,11 +56,13 @@ build (Conf) ->
         true  ->
             %% Only the "[application]" (inserted by build_apps/3) are present
             %% in Index, thus:
-            ?log("No documentation was generated!");
+            ?log("No documentation was generated!"),
+            false;
         false ->
             ok = module_index(Conf, Index),
             ok = javascript_index(Conf, Index),
-            ok = copy_static_files(Conf)
+            ok = copy_static_files(Conf),
+            true
     end.
 
 build_apps (Conf, AppDir, Index) ->
