@@ -3,7 +3,7 @@ all: escript | erl.mk
 erl.mk:
 	curl -fsSLo $@ 'https://raw.github.com/fenollp/erl-mk/master/erl.mk' || rm $@
 
-dep_erlydtl = git://github.com/erlydtl/erlydtl.git master
+dep_erlydtl = https://github.com/erlydtl/erlydtl master
 
 ERLCFLAGS += +debug_info
 
