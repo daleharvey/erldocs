@@ -71,3 +71,4 @@ cd "$site_root" \
     && git pull origin gh-pages \
     && git push origin gh-pages
 cd -
+date
