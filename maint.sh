@@ -23,16 +23,12 @@ archive="$site_root/archives/${odir}.tar.bz2"
 mkdir -p  "$odir"
 rm    -rf "$odir"/*
 
-CONFIGURE_OPTIONS=${CONFIGURE_OPTIONS:-''}
 cd "$idir"
 echo "Commencing pull & build of $release branch" \
-    && rm -rf maint_rel/* \
+    && git checkout -- . \
     && git checkout maint \
-    && make clean \
     && git pull origin maint \
-    && ./otp_build autoconf -a $CONFIGURE_OPTIONS \
-    && ./otp_build configure   $CONFIGURE_OPTIONS \
-    && ./configure && make
+    && MAKEFLAGS=-j6 ./otp_build setup -a
 if [[ $? -ne 0 ]]; then
     echo "Could not make $release"
     cd -
