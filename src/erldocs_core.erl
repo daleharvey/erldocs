@@ -139,7 +139,8 @@ ensure_docsrc (Conf, AppDir) ->
 
     case erlang:system_info(otp_release) of
         "R"++Old when Old < "15" -> SpecsGenModule = specs_gen__below_R15;
-        _ ->                        SpecsGenModule = specs_gen__R15_and_above
+        Vsn when Vsn < "18" ->      SpecsGenModule = specs_gen__R15_to_17;
+        _ ->                        SpecsGenModule = specs_gen__18_and_above
     end,
     SpecsDest = filename:join([dest(Conf), ".xml"]),
     IncFiles = includes(Conf, AppDir),
