@@ -756,10 +756,10 @@ atos ({Name, Val})             -> atom_to_list(Name) ++ "=\""++Val++"\"".
 
 %% convert ascii into html characters
 htmlchars (List) -> htmlchars(List, []).
-htmlchars ([], Acc) -> lists:flatten(lists:reverse(Acc));
+htmlchars ("", Acc) -> lists:flatten(lists:reverse(Acc));
 htmlchars ([$<  |Rest], Acc) -> htmlchars(Rest, ["&lt;"  |Acc]);
 htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
-htmlchars ([$   |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
+htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
 htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
 %% @doc parse xml file against otp's dtd, need to cd into the
