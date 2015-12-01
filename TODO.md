@@ -19,7 +19,6 @@
     * based on multiple-clauses and/or same specs
 * Fix functions & type anchors
     * Look at `edoc`
-* [Redirect OTP's manual pages to erlang.org](//github.com/erldocs/erldocs/issues/1)
 * Convert
     * `<anno></anno>` to nothing?
     * `<taglist> (<tag>|<item>)+` to `<li><ul>` (with indentation)

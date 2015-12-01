@@ -9,7 +9,7 @@ Erlang/OTP ≥ R13B04
 
     git clone https://github.com/erldocs/erldocs.git erldocs.git
     cd erldocs.git/
-    make
+    make -j
 
 An [escript](http://www.erlang.org/doc/man/escript.html) called `erldocs` will thus be generated.
 
