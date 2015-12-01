@@ -14,14 +14,8 @@ rm    -rf "$odir"/*
 [[ ! -x "$erldocs" ]] && [[ ! -L $"$erldocs" ]] && \
     echo "$erldocs executable not found!" && exit 1
 
-includes="-I $idir"/erts/include
-for dir in "$idir"/lib/*/include "$idir"/bootstrap/lib/*/include; do
-    includes="$includes -I $dir"
-done
-
 "$erldocs"          \
     -o "$odir"      \
-    $includes       \
     "$idir"/lib/*   \
     "$idir"/erts    \
     | tee _"$release"
