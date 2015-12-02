@@ -36,12 +36,25 @@ copy_static_files (Conf) ->
 -spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
     Start = erlang:now(),
-    DidBuild = build(Conf),
+    DidBuild = build([{building_otp,is_building_otp(Conf)} | Conf]),
     Diff = timer:now_diff(erlang:now(), Start),
     Mins = trunc(Diff * 1.667e-8),
     Secs = trunc(Diff * 1.000e-6 - Mins * 60),
     ?log("Woot, finished in ~p Minutes ~p Seconds", [Mins, Secs]),
     DidBuild.
+
+is_building_otp (Conf) ->
+    lists:any(fun is_containing_erlang_module/1, kf(apps,Conf)).
+
+is_containing_erlang_module (AppDir) ->
+    ExitFast = fun (_Fn, _Acc) -> throw(found_erlang_erl) end,
+    try filelib:fold_files(AppDir, "^erlang\\.erl$", true, ExitFast, not_found) of
+        not_found -> false
+    catch
+        found_erlang_erl ->
+            ?log("building_otp: true"),
+            true
+    end.
 
 
 %% @doc Build everything
@@ -194,7 +207,8 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
            , {preprocess, true}
            , {dir, Dest}
            , {packages, false}  %% Find modules in subfolders of src/
-           , {layout, docgen_edoc_xml_cb} ],
+           , {layout, docgen_edoc_xml_cb}
+           ],
 
     AppName = bname(AppDir),
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
@@ -213,7 +227,7 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
                       DestFile = filename:join(Dest, Basename++".xml"),
                       ?log("Generating XML ~s - ~s ~p -> ~p",
                            [AppName,Basename,File,DestFile]),
-                      case (catch edoc:file(File, Opts)) of
+                      case catch (edoc:file(File, Opts)) of
                           ok ->
                               [DestFile | Acc];
                           Error ->
