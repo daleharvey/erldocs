@@ -6,7 +6,7 @@ set -e
 mkdir -p doc
 rm -rf doc/* >/dev/null
 make -j escript
-./erldocs -o doc/ -I include/ src/
+./erldocs -o doc/ $(pwd)
 rm -r doc/.xml/
 errors=$(git status --porcelain -- doc/ | wc -l)
 git status --porcelain -- doc/

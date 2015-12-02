@@ -97,7 +97,7 @@ build_file_map (Conf, AppName, File) ->
             Sum2 = case Type of
                        erlref ->
                            {modulesummary, [], Sum}
-                               = lists:keyfind(modulesummary,1, Xml),
+                               = lists:keyfind(modulesummary, 1, Xml),
                             unicode:characters_to_list(
                                 lists:filter(fun (X) -> not is_tuple(X) end, Sum));
                        cref ->
@@ -143,7 +143,7 @@ ensure_docsrc (Conf, AppDir) ->
         _ ->                        SpecsGenModule = specs_gen__18_and_above
     end,
     SpecsDest = filename:join([dest(Conf), ".xml"]),
-    IncFiles = includes(Conf, AppDir),
+    IncFiles = includes(AppDir),
     SpecsIncludes = ["-I"++Inc || Inc <- IncFiles],
     [ begin
           ?log("Generating Type Specs - ~p", [File]),
@@ -159,22 +159,37 @@ ensure_docsrc (Conf, AppDir) ->
                                        gen_docsrc(AppDir, SrcFiles, IncFiles, XMLDir)
                                end).
 
+includes (AppDir) ->
+    {ok, Cwd} = file:get_cwd(),
+    CwdLen = length(Cwd),
+    %% Remove Cwd plus trailing slash
+    Relativer = fun (Path) -> string:substr(Path, CwdLen + 2) end,
+    F = fun (File, Acc) -> push_dirname(Relativer, File, Acc) end,
+    lists:usort(
+      add_parents_too(Cwd, Relativer,
+        lists:usort(
+          filelib:fold_files(AppDir, "\\.hrl$", true, F, [])
+         ))).
 
-includes (Conf, AppDir) ->
-    Above_AppDir = dname(AppDir),
-    keep_existings([ Above_AppDir
-                     %% Those 3 look suspicious (FIXME)
-                   , filename:join(Above_AppDir, "include")
-                   , filename:join(Above_AppDir, "deps")
-                   , filename:join(Above_AppDir, "lib")
-                   , filename:join(AppDir, "include")
-                   , filename:join(AppDir, "deps")
-                   , filename:join(AppDir, "lib")
-                     %% These 2 in case of a non-regular architecture:
-                   , AppDir%%
-                   , filename:join(Above_AppDir, "src")%%
-                     | kf(incs,Conf) ]).
+push_dirname (Relativer, File, T) ->
+    Dirname = dname(File),
+    Exploded = filename:split(Relativer(Dirname)),
+    case lists:member("test", Exploded) of
+        true -> T;
+        false -> [Dirname | T]
+    end.
 
+add_parents_too (Cwd, Relativer, Dirs) ->
+    lists:flatmap(
+      fun (Dir) ->
+              add_parents_too(Cwd, lists:reverse(filename:split(Relativer(Dir))))
+      end, Dirs).
+add_parents_too (Cwd, [Dirname]) ->
+    [filename:join(Cwd, Dirname)];
+add_parents_too (Cwd, RevExp) ->
+    [ filename:join([Cwd] ++ lists:reverse(RevExp))
+      | add_parents_too(Cwd, tl(RevExp))
+    ].
 
 gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
     Opts = [ {includes, IncFiles}
@@ -213,9 +228,6 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
               end, [], SrcFiles)
     end.
 
-
-keep_existings (AppDirIncludes) ->
-    [Include || Include <- AppDirIncludes, filelib:is_dir(Include)].
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)

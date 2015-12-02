@@ -8,8 +8,6 @@
 
 -record(conf, { dirs = []
               , destination = cwd() ++ "/docs/erldocs"
-              , includes  = [ cwd() ++ "/include"
-                            , cwd() ]
               , base = "./"
               , ga = "UA-44246018-1"
               }).
@@ -20,7 +18,7 @@ main ([]) ->
     ok = io:setopts([{encoding, unicode}]),
     Arg0 = escript:script_name(),
     io:format("Usage: \n\t~s  "
-              "[-o ‹output dir›]  [-I ‹include path›]⁺  ‹source path›⁺\n",
+              "[-o ‹output dir›]  ‹source path›⁺\n",
               [Arg0]),
     halt(1);
 main (Args) ->
@@ -35,7 +33,6 @@ parse ([], Conf) ->
     end,
     PropList = [ {apps, Dirs}
                , {dest, aname(Conf#conf.destination)}
-               , {incs, Conf#conf.includes}
                , {base, Conf#conf.base}
                , {ga,   Conf#conf.ga} ],
     run(PropList);
@@ -43,8 +40,9 @@ parse ([], Conf) ->
 parse (["-o", Dest | Rest], Conf) ->
     parse(Rest, Conf#conf{destination = Dest});
 
-parse (["-I", Include | Rest], #conf{includes = Includes} = Conf) ->
-    parse(Rest, Conf#conf{includes = [aname(Include)|Includes]});
+parse (["-I", _Include | Rest], Conf) ->
+    io:format("Option -I is automatically filled, ignoring.\n"),
+    parse(Rest, Conf);
 
 parse (["--base", Base | Rest], Conf) ->
     parse(Rest, Conf#conf{base = Base});

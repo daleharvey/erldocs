@@ -17,7 +17,7 @@ An [escript](http://www.erlang.org/doc/man/escript.html) called `erldocs` will t
 
 ***Mind the space around the flags!***
 
-    erldocs  [-o ‹output dir›]  [-I ‹include path›]⁺  ‹source path›⁺
+    erldocs  [-o ‹output dir›]  ‹source path›⁺
 
 Calling the script to generate documentation for the application in the current working directory:
 this documentation will be output to "./doc/erldocs".
@@ -32,9 +32,9 @@ You can specify the output directory with the `-o` flag
 
     ./erldocs -o path/to/output path/to/erlang/otp/lib/* path/to/erlang/erts
 
-Specify paths to include files with `-I ‹path to include file1›`
+Include files are automatically found, wherever they are inside `my_app`
 
-    ./erldocs -I lib/stdlib/include -I ./include src/
+    ./erldocs my_app/ -o my_app/doc/
 
 To build Erlang|OTP's docs the same way [erldocs.com](http://erldocs.com/) builds them:
 
