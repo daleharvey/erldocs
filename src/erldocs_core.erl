@@ -10,7 +10,8 @@
 
         , mapreduce/4
         , pmapreduce/4
-        , pmapreduce/5 ]).
+        , pmapreduce/5
+        ]).
 
 -include_lib("kernel/include/file.hrl").
 
@@ -272,7 +273,8 @@ module_index (Conf, Index) ->
            , {title,   "Module Index"}
            , {content, Html}
            , {funs,    ""}
-           , {ga,      kf(ga,Conf)} ],
+           , {ga,      kf(ga,Conf)}
+           ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(jname(kf(dest,Conf), "index.html"), Data).
@@ -296,7 +298,8 @@ type_ordering ("fun") -> 3.
 index_ordering ([Type, App, Mod, _Sum]) ->
     [ string:to_lower(App)
     , type_ordering(Type)
-    , string:to_lower(Mod) ].
+    , string:to_lower(Mod)
+    ].
 
 sort_index (A, B) ->
     index_ordering(A) =< index_ordering(B).
@@ -353,7 +356,8 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
            , {title,   Mod ++ " (" ++ App ++ ") - "}
            , {content, xml_to_html(NXml)}
 %%         , {funs,    xml_to_html({ul, [{id,"funs"}], XmlFuns})}
-           , {ga,      kf(ga,Conf)} ],
+           , {ga,      kf(ga,Conf)}
+           ],
 
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(File, Data).
@@ -719,7 +723,9 @@ tr__category (Name, ID, Child) ->
     {'div', [{id,ID}, {class,"category"}]
     , [ {h4, [], [{a, [{href,"#"++ID}], [Name]}]}
       , {hr, [], []}
-      | Child ]}.
+        | Child
+      ]
+    }.
 
 
 nname (Name, 0)   -> Name;
@@ -799,7 +805,8 @@ read_xml (_Conf, XmlFile) ->
     DocgenDir = code:priv_dir(erl_docgen),
     Opts = [ {fetch_path, [ jname(DocgenDir, "dtd")
                           , jname(DocgenDir, "dtd_html_entities") ]}
-           , {encoding, "latin1"} ],
+           , {encoding, "latin1"}
+           ],
     case catch xmerl_scan:file(XmlFile, Opts) of
         {Xml, _Rest} ->
             xmerl_lib:simplify_element(Xml);
@@ -839,7 +846,8 @@ ignore () ->
     [ {"kernel", "init"}
     , {"kernel", "zlib"}
     , {"kernel", "erlang"}
-    , {"kernel", "erl_prim_loader"} ].
+    , {"kernel", "erl_prim_loader"}
+    ].
 
 -type map_fun(D, R) :: fun((D) -> R).
 -type reduce_fun(T) :: fun((T, _) -> _).
