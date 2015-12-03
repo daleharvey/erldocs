@@ -727,8 +727,8 @@ nname (Name, Acc) -> Name ++ "-" ++ integer_to_list(Acc).
 
 inc_name (Name, List, Acc) ->
     case lists:member(nname(Name, Acc), List) of
-        true   -> inc_name(Name, List, Acc+1);
-        false  -> nname(Name, Acc)
+        true  -> inc_name(Name, List, Acc+1);
+        false -> nname(Name, Acc)
     end.
 
 %% Strips xml children that are entirely whitespace (space, tabs, newlines)
@@ -753,7 +753,7 @@ is_whitespace (_) -> false.
 %% {tag, [{listof, "attributes"}], ["list of children"]}
 %% into <tag listof="attributes">list of children</tag>
 xml_to_str (Xml) ->
-    xml_to_html (Xml).
+    xml_to_html(Xml).
 
 xml_to_html (Nbsp)
   when element(1, Nbsp) =:= nbsp ->
@@ -785,12 +785,12 @@ atos ([])                      -> "";
 atos (List) when is_list(List) -> string:join([ atos(X) || X <- List ], " ");
 atos ({Name, Val})             -> atom_to_list(Name) ++ "=\""++Val++"\"".
 
-%% convert ascii into html characters
+%% @doc Convert ascii into html characters
 htmlchars (List) -> htmlchars(List, []).
 htmlchars ("", Acc) -> lists:flatten(lists:reverse(Acc));
 htmlchars ([$<  |Rest], Acc) -> htmlchars(Rest, ["&lt;"  |Acc]);
 htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
-htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
+%htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
 htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
 %% @doc parse xml file against otp's dtd, need to cd into the
