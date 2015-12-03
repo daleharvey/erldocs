@@ -17,7 +17,7 @@ rm    -rf "$odir"/*
 "$erldocs"          \
     -o "$odir"      \
     "$idir"/lib/*   \
-    "$idir"/erts    \
+    "$idir"/erts*   \
     | tee _"$release"
 
 rm -rf "$odir"/.xml

@@ -36,16 +36,10 @@ if [[ $? -ne 0 ]]; then
 fi
 cd -
 
-includes="-I $idir"/erts/include
-for dir in "$idir"/lib/*/include "$idir"/bootstrap/lib/*/include; do
-    includes="$includes -I $dir"
-done
-
 "$erldocs"          \
     -o "$odir"      \
-    $includes       \
     "$idir"/lib/*   \
-    "$idir"/erts    \
+    "$idir"/erts*   \
     | tee _"$release"
 [[ $? -ne 0 ]] && exit 3
 
