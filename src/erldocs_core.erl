@@ -37,6 +37,7 @@ copy_static_files (Conf) ->
 -spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
     Start = erlang:now(),
+    ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, [named_table, set, public]),
     DidBuild = build([{building_otp,is_building_otp(Conf)} | Conf]),
     Diff = timer:now_diff(erlang:now(), Start),
     Mins = trunc(Diff * 1.667e-8),
@@ -804,6 +805,7 @@ read_xml (_Conf, XmlFile) ->
     Opts = [ {fetch_path, [ jname(DocgenDir, "dtd")
                           , jname(DocgenDir, "dtd_html_entities") ]}
            , {encoding, "latin1"}
+           , {rules, ?ERLDOCS_XMERL_ETS_TABLE}
            ],
     case catch xmerl_scan:file(XmlFile, Opts) of
         {Xml, _Rest} ->
