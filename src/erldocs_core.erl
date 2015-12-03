@@ -104,10 +104,9 @@ build_file_map (Conf, AppName, File) ->
             end
     end,
 
-    case lists:member(Type, buildable()) of
+    case is_buildable(Type) of
         false -> [];
-        true  ->
-
+        true ->
             Module = bname(File, ".xml"),
             Xml = strip_whitespace(Content),
 
@@ -838,9 +837,9 @@ jname (Dir1, Dir2) ->
 jname (ExplodedPath) ->
     filename:join(ExplodedPath).
 
-% List of the type of xml files erldocs can build
-buildable () ->
-    [erlref, cref].
+%% @doc Tells whether this XML doc can be built with erldocs
+is_buildable (Type) ->
+    lists:member(Type, [erlref, cref]).
 
 ignore () ->
     [ {"kernel", "init"}
