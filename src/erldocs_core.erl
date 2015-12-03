@@ -265,7 +265,7 @@ module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
 
     Html = "<h1>Module Index</h1><hr/><br/><div>"
-        ++      xml_to_str(emit_index(Index))
+        ++      xml_to_html(emit_index(Index))
         ++ "</div>",
     Args = [ {base,    kf(base,Conf)}
            , {search_base, "./"}
@@ -275,7 +275,7 @@ module_index (Conf, Index) ->
            , {ga,      kf(ga,Conf)} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
-    ok = file:write_file([kf(dest,Conf), "/index.html"], Data).
+    ok = file:write_file(jname(kf(dest,Conf), "index.html"), Data).
 
 emit_index (L) ->
     lists:flatmap(
@@ -351,8 +351,8 @@ render (erlref, App, Mod, Xml, Types, Conf) ->
     Args = [ {base,    Base}
            , {search_base, "../"}
            , {title,   Mod ++ " (" ++ App ++ ") - "}
-           , {content, xml_to_str(NXml)}
-%%         , {funs,    xml_to_str({ul, [{id,"funs"}], XmlFuns})}
+           , {content, xml_to_html(NXml)}
+%%         , {funs,    xml_to_html({ul, [{id,"funs"}], XmlFuns})}
            , {ga,      kf(ga,Conf)} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
@@ -399,7 +399,7 @@ get_funs (App, Mod, {funcs, [], Funs}) ->
 fun_stuff (App, Mod, {func, [], Child}) ->
     case lists:keyfind(fsummary, 1, Child) of
         {fsummary, [], Xml} ->
-            Summary = string:substr(xml_to_str(Xml), 1, 50);
+            Summary = string:substr(xml_to_html(Xml), 1, 50);
         false ->
             Summary = ""
             %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
@@ -749,17 +749,15 @@ is_whitespace ($\n) -> true;
 is_whitespace ($\t) -> true;
 is_whitespace (_) -> false.
 
-%% rather basic xml to string converter, takes xml of the form
+%% @doc
+%% Rather basic xml to string converter, takes xml of the form
 %% {tag, [{listof, "attributes"}], ["list of children"]}
 %% into <tag listof="attributes">list of children</tag>
-xml_to_str (Xml) ->
-    xml_to_html(Xml).
-
+xml_to_html ({nbsp, [], Child}) ->
+    "&nbsp;" ++ xml_to_html(Child);
 xml_to_html (Nbsp)
   when element(1, Nbsp) =:= nbsp ->
     "&nbsp;";
-xml_to_html ({nbsp, [], Child}) ->
-    "&nbsp;" ++ xml_to_html(Child);
 
 xml_to_html ({Tag, Attr}) ->
     %% primarily for cases such as <a name="">
