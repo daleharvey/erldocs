@@ -115,7 +115,7 @@ build_file_map (Conf, AppName, File) ->
             %% strip silly shy characters
             Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
 
-            ok = render(Type, AppName, Module, Content, TypeSpecs, Conf),
+            ok = render(AppName, Module, Content, TypeSpecs, Conf),
 
             case lists:member({AppName, Module}, ignore()) of
                 true -> [];
@@ -244,7 +244,7 @@ gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
--spec tmp_cd (list(), fun()) -> term().
+-spec tmp_cd (list(), fun()) -> _.
 tmp_cd (Dir, Fun) ->
     {ok, OldDir} = file:get_cwd(),
     ok = filelib:ensure_dir(Dir),
@@ -263,7 +263,7 @@ tmp_cd (Dir, Fun) ->
 module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
 
-    Html = "<h1>Module Index</h1><hr/><br/><div>"
+    Html = "<h1>Module Index</h1><hr/><br><div>"
         ++      xml_to_html(emit_index(Index))
         ++ "</div>",
     Args = [ {base,    kf(base,Conf)}
@@ -315,11 +315,9 @@ javascript_index (Conf, FIndex) ->
     Index =
         lists:map(
           fun ([A,B,C,[]]) ->
-                  fmt("['~s','~s','~s',[]]",
-                      [html_encode(A),html_encode(B),html_encode(C)]);
+                  fmt("['~s','~s','~s',[]]", [html_encode(X) || X <- [A,B,C]]);
               ([A,B,C,D]) ->
-                  fmt("['~s','~s','~s','~s']",
-                      [html_encode(A),html_encode(B),html_encode(C),html_encode(D)])
+                  fmt("['~s','~s','~s','~s']", [html_encode(X) || X <- [A,B,C,D]])
           end,
           lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
@@ -328,11 +326,8 @@ javascript_index (Conf, FIndex) ->
 
     ok = file:write_file(jname(kf(dest,Conf), "erldocs_index.js"), Js).
 
-render (cref, App, Mod, Xml, Types, Conf) ->
-    render(erlref, App, Mod, Xml, Types, Conf);
-
-render (erlref, App, Mod, Xml, Types, Conf) ->
-
+%% Note: handles both erlref and cref types
+render (App, Mod, Xml, Types, Conf) ->
     File = jname([kf(dest,Conf), App, Mod++".html"]),
     ok = filelib:ensure_dir(dname(File) ++ "/"),
 
@@ -375,7 +370,6 @@ render (Fun, List, Acc) when is_list(List) ->
     end;
 
 render (Fun, Element, Acc) ->
-
     % this is nasty
     F = fun (ignore, NAcc) ->
                 {NAcc, ""};
@@ -819,7 +813,7 @@ fmt (Format, Args) ->
     lists:flatten(io_lib:format(Format, Args)).
 
 %% @doc shorthand for lists:keyfind
--spec kf (term(), list()) -> term().
+-spec kf (_, list()) -> _.
 kf (Key, Conf) ->
     {Key, Val} = lists:keyfind(Key, 1, Conf),
     Val.
