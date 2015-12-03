@@ -62,10 +62,12 @@ is_containing_erlang_module (AppDir) ->
 %% @doc Build everything
 -spec build (list()) -> boolean().
 build (Conf) ->
-    filelib:ensure_dir(kf(dest,Conf)),
+    filelib:ensure_dir(kf(dest, Conf)),
+    AppDirs = app_dirs(kf(apps, Conf)),
+    IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
-    Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
-    Index = lists:foldl(Fun, [], app_dirs(Conf)),
+    Fun   = fun (AppDir, Acc) -> build_apps(Conf, IncludePaths, AppDir, Acc) end,
+    Index = lists:foldl(Fun, [], AppDirs),
 
     case length(kf(apps,Conf)) == length(Index) of
         true  ->
@@ -80,10 +82,10 @@ build (Conf) ->
             true
     end.
 
-build_apps (Conf, AppDir, Index) ->
+build_apps (Conf, IncludePaths, AppDir, Index) ->
     AppName = bname(AppDir),
     ?log("Building ~s", [AppName]),
-    Files   = ensure_docsrc(Conf, AppDir),
+    Files   = ensure_docsrc(Conf, IncludePaths, AppDir),
     Map = fun (F) -> build_file_map(Conf, AppName, F) end,
     [["app", AppName, AppName, "[application]"] |
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
@@ -130,7 +132,7 @@ module_summary (cref, Xml) ->
     {_, [], Sum} = lists:keyfind(libsummary, 1, Xml),
     Sum.
 
-ensure_docsrc (Conf, AppDir) ->
+ensure_docsrc (Conf, IncludePaths, AppDir) ->
     %% List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
@@ -149,15 +151,14 @@ ensure_docsrc (Conf, AppDir) ->
     filelib:ensure_dir(XMLDir ++ "/"),
 
     SpecsDest = jname(kf(dest,Conf), ?SPECS_TMP),
-    IncFiles = includes(AppDir),
-    lists:foreach(fun (File) -> gen_type_specs(SpecsDest, IncFiles, File) end, ErlFiles),
+    lists:foreach(fun (File) -> gen_type_specs(SpecsDest, IncludePaths, File) end, ErlFiles),
 
     %% Return the complete list of XML files
     XMLFiles ++ tmp_cd(XMLDir, fun () ->
-                                       gen_docsrc(AppDir, SrcFiles, IncFiles, XMLDir)
+                                       gen_docsrc(AppDir, SrcFiles, IncludePaths, XMLDir)
                                end).
 
-gen_type_specs (SpecsDest, IncFiles, ErlFile) ->
+gen_type_specs (SpecsDest, IncludePaths, ErlFile) ->
     case erlang:system_info(otp_release) of
         [$R,$1,Digit|_] when Digit < $5 -> SpecsGenModule = specs_gen__below_R15;
         "R"++_ ->                          SpecsGenModule = specs_gen__R15_to_17;
@@ -165,7 +166,7 @@ gen_type_specs (SpecsDest, IncFiles, ErlFile) ->
         _ ->                               SpecsGenModule = specs_gen__18_and_above
     end,
     ?log("Generating Type Specs - ~p", [ErlFile]),
-    Args = ["-o"++SpecsDest] ++ ["-I"++Inc || Inc <- IncFiles] ++ [ErlFile],
+    Args = ["-o"++SpecsDest] ++ ["-I"++Inc || Inc <- IncludePaths] ++ [ErlFile],
     try SpecsGenModule:main(Args)
     catch _:_SpecsGenError ->
             ?log("Error generating type specs for ~p", [ErlFile])
@@ -203,8 +204,8 @@ add_parents_too (Cwd, RevExp) ->
       | add_parents_too(Cwd, tl(RevExp))
     ].
 
-gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
-    Opts = [ {includes, IncFiles}
+gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
+    Opts = [ {includes, IncludePaths}
            , {sort_functions, false}
            , {file_suffix, ?SPECS_TMP}
            , {preprocess, true}
@@ -434,11 +435,11 @@ make_name (Name) ->
             Name3 ++ "/" ++ integer_to_list(NArgs)
     end.
 
-app_dirs (Conf) ->
+app_dirs (Paths) ->
     Fun = fun (Path, Acc) ->
                   Acc ++ [X || X <- filelib:wildcard(Path), filelib:is_dir(X)]
           end,
-    lists:foldl(Fun, [], kf(apps, Conf)).
+    lists:foldl(Fun, [], Paths).
 
 'add .html' ("#"++Rest) ->
     "#"++ separate_f_from_a(Rest);
