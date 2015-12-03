@@ -13,12 +13,10 @@
         , pmapreduce/5
         ]).
 
--include_lib("kernel/include/file.hrl").
+-include("erldocs.hrl").
 
 -define(log(Str, Args), io:format(Str++"\n", Args)).
 -define(log(Str),       io:format(Str++"\n")).
-
--define(SPECS_TMP, ".xml").
 
 %% API
 
@@ -95,7 +93,7 @@ build_file_map (Conf, AppName, File) ->
     ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
-    TypeSpecsFile = jname([kf(dest,Conf), ?SPECS_TMP, "specs_" ++ bname(File)]),
+    TypeSpecsFile = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, "specs_" ++ bname(File)]),
     case filelib:is_file(TypeSpecsFile) of
         false ->                      TypeSpecs = [];
         true ->
@@ -148,10 +146,10 @@ ensure_docsrc (Conf, IncludePaths, AppDir) ->
 
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
-    XMLDir = jname([kf(dest,Conf), ?SPECS_TMP, bname(AppDir)]),
+    XMLDir = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, bname(AppDir)]),
     filelib:ensure_dir(XMLDir ++ "/"),
 
-    SpecsDest = jname(kf(dest,Conf), ?SPECS_TMP),
+    SpecsDest = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
     lists:foreach(fun (File) -> gen_type_specs(SpecsDest, IncludePaths, File) end, ErlFiles),
 
     %% Return the complete list of XML files
@@ -208,7 +206,7 @@ add_parents_too (Cwd, RevExp) ->
 gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
     Opts = [ {includes, IncludePaths}
            , {sort_functions, false}
-           , {file_suffix, ?SPECS_TMP}
+           , {file_suffix, ?ERLDOCS_SPECS_TMP}
            , {preprocess, true}
            , {dir, Dest}
            , {packages, false}  %% Find modules in subfolders of src/
