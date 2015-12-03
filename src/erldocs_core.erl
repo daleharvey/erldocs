@@ -36,13 +36,9 @@ copy_static_files (Conf) ->
 %% appropriate function.
 -spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
-    Start = erlang:now(),
     ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, [named_table, set, public]),
     DidBuild = build([{building_otp,is_building_otp(Conf)} | Conf]),
-    Diff = timer:now_diff(erlang:now(), Start),
-    Mins = trunc(Diff * 1.667e-8),
-    Secs = trunc(Diff * 1.000e-6 - Mins * 60),
-    ?log("Woot, finished in ~p Minutes ~p Seconds", [Mins, Secs]),
+    ?log("Woot, finished"),
     DidBuild.
 
 is_building_otp (Conf) ->
@@ -274,7 +270,7 @@ module_index (Conf, Index) ->
            , {search_base, "./"}
            , {title,   "Module Index"}
            , {content, Html}
-           , {funs,    ""}
+           %% , {funs,    ""}
            , {ga,      kf(ga,Conf)}
            ],
 
