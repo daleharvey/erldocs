@@ -14,15 +14,18 @@
 
 %% API
 
-main ([]) ->
+%% @doc Returns true if some documentation was built;
+%%  false if none was generated.
+-spec main (list()) -> boolean().
+main (Args=[_|_]) ->
+    parse(Args, #conf{});
+main (_) ->
     ok = io:setopts([{encoding, unicode}]),
     Arg0 = escript:script_name(),
     io:format("Usage: \n\t~s  "
               "[-o ‹output dir›]  ‹source path›⁺\n",
               [Arg0]),
-    halt(1);
-main (Args) ->
-    parse(Args, #conf{}).
+    halt(1).
 
 %% Internals
 
@@ -35,7 +38,7 @@ parse ([], Conf) ->
                , {dest, aname(Conf#conf.destination)}
                , {base, Conf#conf.base}
                , {ga,   Conf#conf.ga} ],
-    run(PropList);
+    erldocs_core:dispatch(PropList);
 
 parse (["-o", Dest | Rest], Conf) ->
     parse(Rest, Conf#conf{destination = Dest});
@@ -58,18 +61,8 @@ parse ([Dir0 | Rest], #conf{dirs = Dirs} = Conf) ->
     parse(Rest, Conf#conf{dirs = [aname(Dir)|Dirs]}).
 
 
-run (Conf) ->
-    try erldocs_core:dispatch(Conf)
-    catch Type:Error ->
-            log("Error running script:\n~p\n~p\n",
-                [erlang:get_stacktrace(), {Type, Error}])
-    end.
-
 aname (Filename) ->
     filename:absname(Filename).
-
-log (Str, Args) ->
-    io:format(Str, Args).
 
 cwd () ->
     {ok, Cwd} = file:get_cwd(),
