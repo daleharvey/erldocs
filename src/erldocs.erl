@@ -16,7 +16,7 @@
 
 %% @doc Returns true if some documentation was built;
 %%  false if none was generated.
--spec main (list()) -> boolean().
+-spec main (_) -> boolean().
 main (Args=[_|_]) ->
     parse(Args, #conf{});
 main (_) ->

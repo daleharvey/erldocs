@@ -44,6 +44,7 @@ dispatch (Conf) ->
 is_building_otp (Conf) ->
     lists:any(fun is_containing_erlang_module/1, kf(apps,Conf)).
 
+-spec is_containing_erlang_module (file:name()) -> boolean().
 is_containing_erlang_module (AppDir) ->
     ExitFast = fun (_Fn, _Acc) -> throw(found_erlang_erl) end,
     try filelib:fold_files(AppDir, "^erlang\\.erl$", true, ExitFast, not_found) of
@@ -58,7 +59,7 @@ is_containing_erlang_module (AppDir) ->
 %% @doc Build everything
 -spec build (list()) -> boolean().
 build (Conf) ->
-    filelib:ensure_dir(kf(dest, Conf)),
+    mkdir_p(kf(dest, Conf)),
     AppDirs = [Path || Path <- kf(apps,Conf), filelib:is_dir(Path)],
     IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
@@ -148,7 +149,7 @@ ensure_docsrc (Conf, IncludePaths, AppDir) ->
     %% This prevents from polluting the source files
     TmpRoot = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
     XMLDir  = jname(TmpRoot, bname(AppDir)),
-    filelib:ensure_dir(XMLDir ++ "/"),
+    mkdir_p(XMLDir ++ "/"),
 
     lists:foreach(fun (File) -> gen_type_specs(TmpRoot, IncludePaths, File) end, ErlFiles),
 
@@ -244,10 +245,10 @@ gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
 
 %% @doc run a function with the cwd set, ensuring the cwd is reset once
 %% finished (some dumb functions require to be ran from a particular dir)
--spec tmp_cd (list(), fun()) -> _.
+-spec tmp_cd (file:name(), fun()) -> _.
 tmp_cd (Dir, Fun) ->
     {ok, OldDir} = file:get_cwd(),
-    ok = filelib:ensure_dir(Dir),
+    mkdir_p(Dir),
     ok = file:set_cwd(Dir),
     try
         Result = Fun(),
@@ -334,7 +335,7 @@ shorten (Str) ->
 %% Note: handles both erlref and cref types
 render (App, Mod, Xml, Types, Conf) ->
     File = jname([kf(dest,Conf), App, Mod++".html"]),
-    ok = filelib:ensure_dir(dname(File) ++ "/"),
+    mkdir_p(dname(File) ++ "/"),
 
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
@@ -872,5 +873,11 @@ segment (List, _N, 1) ->
 segment (List, N, Segments) ->
     {Front, Back} = lists:split(N, List),
     [Front | segment(Back, N, Segments - 1)].
+
+mkdir_p (Path) ->
+    case filelib:ensure_dir(Path) of
+        ok -> ok;
+        {error, eexist} -> ok
+    end.
 
 %% End of Module.
