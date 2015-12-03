@@ -17,12 +17,14 @@
 -define(log(Str, Args), io:format(Str++"\n", Args)).
 -define(log(Str),       io:format(Str++"\n")).
 
+-define(SPECS_TMP, ".xml").
+
 %% API
 
 %% @doc Copy static files
 -spec copy_static_files (list()) -> ok.
 copy_static_files (Conf) ->
-    Dest = dest(Conf),
+    Dest = kf(dest, Conf),
     {ok, ErlDocsCSS} = erldocs_css_dtl:render([]),
     edoc_lib:write_file(ErlDocsCSS, Dest, "erldocs.css"),
     {ok, ErlDocsJS } =  erldocs_js_dtl:render([]),
@@ -60,7 +62,7 @@ is_containing_erlang_module (AppDir) ->
 %% @doc Build everything
 -spec build (list()) -> boolean().
 build (Conf) ->
-    filelib:ensure_dir(dest(Conf)),
+    filelib:ensure_dir(kf(dest,Conf)),
 
     Fun   = fun (X, Y) -> build_apps(Conf, X, Y) end,
     Index = lists:foldl(Fun, [], app_dirs(Conf)),
@@ -90,7 +92,7 @@ build_file_map (Conf, AppName, File) ->
     ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
     {Type, _Attr, Content} = read_xml(Conf, File),
 
-    TypeSpecsFile = filename:join([dest(Conf), ".xml", "specs_" ++ bname(File)]),
+    TypeSpecsFile = jname([kf(dest,Conf), ?SPECS_TMP, "specs_" ++ bname(File)]),
     case filelib:is_file(TypeSpecsFile) of
         false ->                      TypeSpecs = [];
         true ->
@@ -130,11 +132,11 @@ module_summary (cref, Xml) ->
 
 ensure_docsrc (Conf, AppDir) ->
     %% List any doc/src/*.xml files that exist in the source files
-    XMLFiles = filelib:wildcard(filename:join([AppDir, "doc", "src", "*.xml"])),
+    XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
 
-    ErlFiles = filelib:wildcard(filename:join([AppDir,        "*.erl"]))
-        ++     filelib:wildcard(filename:join([AppDir, "src", "*.erl"])),
+    ErlFiles = filelib:wildcard(jname([AppDir,        "*.erl"]))
+        ++     filelib:wildcard(jname([AppDir, "src", "*.erl"])),
 
     %% Generate any missing module XML
     SrcFiles = [filename:absname(File) ||
@@ -143,30 +145,31 @@ ensure_docsrc (Conf, AppDir) ->
 
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
-    XMLDir = filename:join([dest(Conf), ".xml", bname(AppDir)]),
+    XMLDir = jname([kf(dest,Conf), ?SPECS_TMP, bname(AppDir)]),
     filelib:ensure_dir(XMLDir ++ "/"),
 
-    case erlang:system_info(otp_release) of
-        "R"++Old when Old < "15" -> SpecsGenModule = specs_gen__below_R15;
-        Vsn when Vsn < "18" ->      SpecsGenModule = specs_gen__R15_to_17;
-        _ ->                        SpecsGenModule = specs_gen__18_and_above
-    end,
-    SpecsDest = filename:join([dest(Conf), ".xml"]),
+    SpecsDest = jname(kf(dest,Conf), ?SPECS_TMP),
     IncFiles = includes(AppDir),
-    SpecsIncludes = ["-I"++Inc || Inc <- IncFiles],
-    [ begin
-          ?log("Generating Type Specs - ~p", [File]),
-          Args = ["-o"++SpecsDest] ++ SpecsIncludes ++ [File],
-          try SpecsGenModule:main(Args)
-          catch _:_SpecsGenError ->
-                  ?log("Error generating type specs for ~p", [File])
-          end
-      end || File <- ErlFiles],
+    lists:foreach(fun (File) -> gen_type_specs(SpecsDest, IncFiles, File) end, ErlFiles),
 
     %% Return the complete list of XML files
     XMLFiles ++ tmp_cd(XMLDir, fun () ->
                                        gen_docsrc(AppDir, SrcFiles, IncFiles, XMLDir)
                                end).
+
+gen_type_specs (SpecsDest, IncFiles, ErlFile) ->
+    case erlang:system_info(otp_release) of
+        [$R,$1,Digit|_] when Digit < $5 -> SpecsGenModule = specs_gen__below_R15;
+        "R"++_ ->                          SpecsGenModule = specs_gen__R15_to_17;
+        Vsn when Vsn < "18" ->             SpecsGenModule = specs_gen__R15_to_17;
+        _ ->                               SpecsGenModule = specs_gen__18_and_above
+    end,
+    ?log("Generating Type Specs - ~p", [ErlFile]),
+    Args = ["-o"++SpecsDest] ++ ["-I"++Inc || Inc <- IncFiles] ++ [ErlFile],
+    try SpecsGenModule:main(Args)
+    catch _:_SpecsGenError ->
+            ?log("Error generating type specs for ~p", [ErlFile])
+    end.
 
 includes (AppDir) ->
     {ok, Cwd} = file:get_cwd(),
@@ -194,16 +197,16 @@ add_parents_too (Cwd, Relativer, Dirs) ->
               add_parents_too(Cwd, lists:reverse(filename:split(Relativer(Dir))))
       end, Dirs).
 add_parents_too (Cwd, [Dirname]) ->
-    [filename:join(Cwd, Dirname)];
+    [jname(Cwd, Dirname)];
 add_parents_too (Cwd, RevExp) ->
-    [ filename:join([Cwd] ++ lists:reverse(RevExp))
+    [ jname([Cwd] ++ lists:reverse(RevExp))
       | add_parents_too(Cwd, tl(RevExp))
     ].
 
 gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
     Opts = [ {includes, IncFiles}
            , {sort_functions, false}
-           , {file_suffix, ".xml"}
+           , {file_suffix, ?SPECS_TMP}
            , {preprocess, true}
            , {dir, Dest}
            , {packages, false}  %% Find modules in subfolders of src/
@@ -212,7 +215,7 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
 
     AppName = bname(AppDir),
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
-    case (catch edoc:application(list_to_atom(AppName), AppDir, Opts)) of
+    case catch (edoc:application(list_to_atom(AppName), AppDir, Opts)) of
         ok ->
             Accr = fun (Filename, Acc) -> [Filename|Acc] end,
             XmlFiles = filelib:fold_files(Dest, ".+\\.xml$", false, Accr, []),
@@ -224,7 +227,7 @@ gen_docsrc (AppDir, SrcFiles, IncFiles, Dest) ->
             lists:foldl(
               fun (File, Acc) ->
                       Basename = bname(File, ".erl"),
-                      DestFile = filename:join(Dest, Basename++".xml"),
+                      DestFile = jname(Dest, Basename++".xml"),
                       ?log("Generating XML ~s - ~s ~p -> ~p",
                            [AppName,Basename,File,DestFile]),
                       case catch (edoc:file(File, Opts)) of
@@ -271,7 +274,7 @@ module_index (Conf, Index) ->
            , {ga,      kf(ga,Conf)} ],
 
     {ok, Data} = erldocs_dtl:render(Args),
-    ok = file:write_file([dest(Conf), "/index.html"], Data).
+    ok = file:write_file([kf(dest,Conf), "/index.html"], Data).
 
 emit_index (L) ->
     lists:flatmap(
@@ -309,27 +312,27 @@ javascript_index (Conf, FIndex) ->
 
     Index =
         lists:map(
-              fun ([A,B,C,[]]) ->
-                      fmt("['~s','~s','~s',[]]",
-                        [html_encode(A),html_encode(B),html_encode(C)]);
-                  ([A,B,C,D]) ->
-                      fmt("['~s','~s','~s','~s']",
-                        [html_encode(A),html_encode(B),html_encode(C),html_encode(D)])
-              end,
-              lists:sort(fun sort_index/2, lists:map(F, FIndex))),
+          fun ([A,B,C,[]]) ->
+                  fmt("['~s','~s','~s',[]]",
+                      [html_encode(A),html_encode(B),html_encode(C)]);
+              ([A,B,C,D]) ->
+                  fmt("['~s','~s','~s','~s']",
+                      [html_encode(A),html_encode(B),html_encode(C),html_encode(D)])
+          end,
+          lists:sort(fun sort_index/2, lists:map(F, FIndex))),
 
     Js = fmt("var index = [~s];",
              [string:join([[C || C <- I, C /= $\n, C /= $\r] || I <- Index], ",")]),
 
-    ok = file:write_file([dest(Conf), "/erldocs_index.js"], Js).
+    ok = file:write_file(jname(kf(dest,Conf), "erldocs_index.js"), Js).
 
 render (cref, App, Mod, Xml, Types, Conf) ->
     render(erlref, App, Mod, Xml, Types, Conf);
 
 render (erlref, App, Mod, Xml, Types, Conf) ->
 
-    File = filename:join([dest(Conf), App, Mod++".html"]),
-    ok   = filelib:ensure_dir(dname(File) ++ "/"),
+    File = jname([kf(dest,Conf), App, Mod++".html"]),
+    ok = filelib:ensure_dir(dname(File) ++ "/"),
 
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
@@ -795,8 +798,8 @@ htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 read_xml (_Conf, XmlFile) ->
     ?log("Reading XML for ~p", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
-    Opts = [ {fetch_path, [ filename:join(DocgenDir, "dtd")
-                          , filename:join(DocgenDir, "dtd_html_entities") ]}
+    Opts = [ {fetch_path, [ jname(DocgenDir, "dtd")
+                          , jname(DocgenDir, "dtd_html_entities") ]}
            , {encoding, "latin1"} ],
     case catch xmerl_scan:file(XmlFile, Opts) of
         {Xml, _Rest} ->
@@ -816,11 +819,6 @@ kf (Key, Conf) ->
     {Key, Val} = lists:keyfind(Key, 1, Conf),
     Val.
 
-%% @doc path to the destination folder
--spec dest (list()) -> list().
-dest (Conf) ->
-    [kf(dest, Conf)].
-
 bname (Name) ->
     filename:basename(Name).
 bname (Name, Ext) ->
@@ -828,6 +826,11 @@ bname (Name, Ext) ->
 
 dname (Name) ->
     filename:dirname(Name).
+
+jname (Dir1, Dir2) ->
+    filename:join(Dir1, Dir2).
+jname (ExplodedPath) ->
+    filename:join(ExplodedPath).
 
 % List of the type of xml files erldocs can build
 buildable () ->
