@@ -94,19 +94,7 @@ build_file_map (Conf, AppName, File) ->
             Module = bname(File, ".xml"),
             Xml = strip_whitespace(Content),
 
-            Sum2 = case Type of
-                       erlref ->
-                           {modulesummary, [], Sum}
-                               = lists:keyfind(modulesummary, 1, Xml),
-                            unicode:characters_to_list(
-                                lists:filter(fun (X) -> not is_tuple(X) end, Sum));
-                       cref ->
-                           {libsummary, [], Sum}
-                               = lists:keyfind(libsummary, 1, Xml),
-                           Sum
-                  end,
-
-            Sum1 = lists:flatten(Sum2),
+            Sum = lists:flatten(module_summary(Type, Xml)),
 
             %% strip silly shy characters
             Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
@@ -115,9 +103,17 @@ build_file_map (Conf, AppName, File) ->
 
             case lists:member({AppName, Module}, ignore()) of
                 true -> [];
-                false -> [ ["mod", AppName, Module, Sum1] |  Funs]
+                false -> [ ["mod", AppName, Module, Sum] | Funs]
             end
     end.
+
+module_summary (erlref, Xml) ->
+    {_, [], Sum} = lists:keyfind(modulesummary, 1, Xml),
+    unicode:characters_to_list(
+      lists:filter(fun (X) -> not is_tuple(X) end, Sum));
+module_summary (cref, Xml) ->
+    {_, [], Sum} = lists:keyfind(libsummary, 1, Xml),
+    Sum.
 
 ensure_docsrc (Conf, AppDir) ->
     %% List any doc/src/*.xml files that exist in the source files
@@ -728,7 +724,12 @@ strip_whitespace (Else) ->
 'keeper?' (X) when is_tuple(X); is_number(X) ->
     true;
 'keeper?' (X) ->
-    not lists:all(fun (C) -> C == $  orelse C == $\n orelse C == $\t end, X).
+    not lists:all(fun is_whitespace/1, X).
+
+is_whitespace ($\s) -> true;
+is_whitespace ($\n) -> true;
+is_whitespace ($\t) -> true;
+is_whitespace (_) -> false.
 
 %% rather basic xml to string converter, takes xml of the form
 %% {tag, [{listof, "attributes"}], ["list of children"]}
