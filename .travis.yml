@@ -7,6 +7,9 @@ otp_release:
 
 sudo: false
 
+before_script:
+  - set -e
+
 script:
   - make -j
 
