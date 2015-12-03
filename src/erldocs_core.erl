@@ -91,35 +91,39 @@ build_apps (Conf, IncludePaths, AppDir, Index) ->
      pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
 
 build_file_map (Conf, AppName, File) ->
-    ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
-    {Type, _Attr, Content} = read_xml(File),
-
-    TypeSpecsFile = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, "specs_" ++ bname(File)]),
-    case filelib:is_file(TypeSpecsFile) of
-        false ->                      TypeSpecs = [];
+    Module = bname(File, ".xml"),
+    case is_ignored(AppName, Module) of
         true ->
-            case read_xml(TypeSpecsFile) of
-                {error, _, _} ->      TypeSpecs = [];
-                {module, _, Specs} -> TypeSpecs = strip_whitespace(Specs)
-            end
-    end,
+            ?log("HTML generation for ~s skipped - ~p", [Module, File]),
+            [];
+        false ->
+            ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
+            {Type, _Attr, Content} = read_xml(File),
 
-    case is_buildable(Type) of
-        false -> [];
-        true ->
-            Module = bname(File, ".xml"),
-            Xml = strip_whitespace(Content),
+            case is_buildable(Type) of
+                false ->
+                    ?log("HTML generation for ~s impossible - ~p", [Module, File]),
+                    [];
+                true ->
+                    TypeSpecsFile = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, "specs_"++Module++".xml"]),
+                    case filelib:is_file(TypeSpecsFile) of
+                        false ->                      TypeSpecs = [];
+                        true ->
+                            case read_xml(TypeSpecsFile) of
+                                {error, _, _} ->      TypeSpecs = [];
+                                {module, _, Specs} -> TypeSpecs = strip_whitespace(Specs)
+                            end
+                    end,
 
-            Sum = lists:flatten(module_summary(Type, Xml)),
+                    Xml = strip_whitespace(Content),
 
-            %% strip silly shy characters
-            Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
+                    %% strip silly shy characters
+                    Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
 
-            ok = render(AppName, Module, Content, TypeSpecs, Conf),
+                    ok = render(AppName, Module, Content, TypeSpecs, Conf),
 
-            case lists:member({AppName, Module}, ignore()) of
-                true -> [];
-                false -> [ ["mod", AppName, Module, Sum] | Funs]
+                    Sum = lists:flatten(module_summary(Type, Xml)),
+                    [ ["mod", AppName, Module, Sum] | Funs]
             end
     end.
 
@@ -833,15 +837,16 @@ jname (ExplodedPath) ->
     filename:join(ExplodedPath).
 
 %% @doc Tells whether this XML doc can be built with erldocs
-is_buildable (Type) ->
-    lists:member(Type, [erlref, cref]).
+is_buildable (erlref) -> true;
+is_buildable (cref) -> true;
+is_buildable (_Type) -> false.
 
-ignore () ->
-    [ {"kernel", "init"}
-    , {"kernel", "zlib"}
-    , {"kernel", "erlang"}
-    , {"kernel", "erl_prim_loader"}
-    ].
+%% @doc A black list for OTP
+is_ignored ("kernel", "init") -> true;
+is_ignored ("kernel", "zlib") -> true;
+is_ignored ("kernel", "erlang") -> true;
+is_ignored ("kernel", "erl_prim_loader") -> true;
+is_ignored (_AppName, _Module) -> false.
 
 -type map_fun(D, R) :: fun((D) -> R).
 -type reduce_fun(T) :: fun((T, _) -> _).
