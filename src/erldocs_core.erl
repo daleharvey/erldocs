@@ -92,13 +92,13 @@ build_apps (Conf, IncludePaths, AppDir, Index) ->
 
 build_file_map (Conf, AppName, File) ->
     ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
-    {Type, _Attr, Content} = read_xml(Conf, File),
+    {Type, _Attr, Content} = read_xml(File),
 
     TypeSpecsFile = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, "specs_" ++ bname(File)]),
     case filelib:is_file(TypeSpecsFile) of
         false ->                      TypeSpecs = [];
         true ->
-            case read_xml(Conf, TypeSpecsFile) of
+            case read_xml(TypeSpecsFile) of
                 {error, _, _} ->      TypeSpecs = [];
                 {module, _, Specs} -> TypeSpecs = strip_whitespace(Specs)
             end
@@ -789,10 +789,11 @@ htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
 %htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
 htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
-%% @doc parse xml file against otp's dtd, need to cd into the
+%% @doc
+%% Parse XML file against OTP's DTD, need to cd into the
 %% source directory because files are addressed relative to it
--spec read_xml (list(), list()) -> tuple().
-read_xml (_Conf, XmlFile) ->
+-spec read_xml (list()) -> tuple().
+read_xml (XmlFile) ->
     ?log("Reading XML for ~p", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
     Opts = [ {fetch_path, [ jname(DocgenDir, "dtd")
