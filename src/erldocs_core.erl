@@ -59,7 +59,7 @@ is_containing_erlang_module (AppDir) ->
 -spec build (list()) -> boolean().
 build (Conf) ->
     filelib:ensure_dir(kf(dest, Conf)),
-    AppDirs = app_dirs(kf(apps, Conf)),
+    AppDirs = [Path || Path <- kf(apps,Conf), filelib:is_dir(Path)],
     IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
     Fun   = fun (AppDir, Acc) -> build_apps(Conf, IncludePaths, AppDir, Acc) end,
@@ -147,7 +147,7 @@ ensure_docsrc (Conf, IncludePaths, AppDir) ->
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
     TmpRoot = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
-    XMLDir = jname(TmpRoot, bname(AppDir)),
+    XMLDir  = jname(TmpRoot, bname(AppDir)),
     filelib:ensure_dir(XMLDir ++ "/"),
 
     lists:foreach(fun (File) -> gen_type_specs(TmpRoot, IncludePaths, File) end, ErlFiles),
@@ -264,7 +264,7 @@ module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
 
     Html = "<h1>Module Index</h1><hr/><br><div>"
-        ++      xml_to_html(emit_index(Index))
+        ++      xml_to_html(xml_index(Index))
         ++ "</div>",
     Args = [ {base,    kf(base,Conf)}
            , {search_base, "./"}
@@ -277,25 +277,26 @@ module_index (Conf, Index) ->
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(jname(kf(dest,Conf), "index.html"), Data).
 
-emit_index (L) ->
+xml_index (L) ->
+    Sorted = lists:sort(fun sort_index/2, L),
     lists:flatmap(
       fun (["app", App, _,  _Sum]) ->
               [{a, [{name, App}]}, {h4, [], [App]}];
           (["mod", App, Mod, Sum]) ->
-              Url = App ++ "/" ++ Mod ++ ".html",
+              Url = jname(App, Mod++".html"),
               [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
           (_) ->
               []
       end,
-      lists:sort(fun sort_index/2, L)).
-
-type_ordering ("app") -> 1;
-type_ordering ("mod") -> 2;
-type_ordering ("fun") -> 3.
+      Sorted).
 
 index_ordering ([Type, App, Mod, _Sum]) ->
     [ string:to_lower(App)
-    , type_ordering(Type)
+    , case Type of
+          "app" -> 1;
+          "mod" -> 2;
+          "fun" -> 3
+      end
     , string:to_lower(Mod)
     ].
 
@@ -309,9 +310,10 @@ javascript_index (Conf, FIndex) ->
     ?log("Creating erldocs_index.js ..."),
 
     F = fun ([Else, App, NMod, Sum]) ->
-                [Else, App, NMod, fmt("~ts", [string:substr(Sum, 1, 50)])]
+                [Else, App, NMod, fmt("~ts", [shorten(Sum)])]
         end,
 
+    Sorted = lists:sort(fun sort_index/2, lists:map(F, FIndex)),
     Index =
         lists:map(
           fun ([A,B,C,[]]) ->
@@ -319,12 +321,15 @@ javascript_index (Conf, FIndex) ->
               ([A,B,C,D]) ->
                   fmt("['~s','~s','~s','~s']", [html_encode(X) || X <- [A,B,C,D]])
           end,
-          lists:sort(fun sort_index/2, lists:map(F, FIndex))),
+          Sorted),
 
     Js = fmt("var index = [~s];",
              [string:join([[C || C <- I, C /= $\n, C /= $\r] || I <- Index], ",")]),
 
     ok = file:write_file(jname(kf(dest,Conf), "erldocs_index.js"), Js).
+
+shorten (Str) ->
+    string:substr(Str, 1, 50).
 
 %% Note: handles both erlref and cref types
 render (App, Mod, Xml, Types, Conf) ->
@@ -385,17 +390,15 @@ render (Fun, Element, Acc) ->
         El         -> F(El, Acc)
     end.
 
-get_funs (_App, _Mod, false) ->
-    [];
+get_funs (_App, _Mod, false) -> [];
 get_funs (App, Mod, {funcs, [], Funs}) ->
-    lists:foldl(
-      fun (X, Acc) -> fun_stuff(App, Mod, X) ++ Acc end,
-      [], Funs).
+    F = fun (X, Acc) -> fun_stuff(App, Mod, X) ++ Acc end,
+    lists:foldl(F, [], Funs).
 
 fun_stuff (App, Mod, {func, [], Child}) ->
     case lists:keyfind(fsummary, 1, Child) of
         {fsummary, [], Xml} ->
-            Summary = string:substr(xml_to_html(Xml), 1, 50);
+            Summary = shorten(xml_to_html(Xml));
         false ->
             Summary = ""
             %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
@@ -426,16 +429,10 @@ make_name (Name) ->
         Pos ->
             {Name2, Rest2} = lists:split(Pos-1, Tmp),
             Name3          = lists:last(string:tokens(Name2, ":")),
-            Args           = string:substr(Rest2, 2, string:chr(Rest2, 41)-2),
+            Args           = string:substr(Rest2, 2, string:chr(Rest2, $))-2),
             NArgs          = length(string:tokens(Args, ",")),
             Name3 ++ "/" ++ integer_to_list(NArgs)
     end.
-
-app_dirs (Paths) ->
-    Fun = fun (Path, Acc) ->
-                  Acc ++ [X || X <- filelib:wildcard(Path), filelib:is_dir(X)]
-          end,
-    lists:foldl(Fun, [], Paths).
 
 'add .html' ("#"++Rest) ->
     "#"++ separate_f_from_a(Rest);
