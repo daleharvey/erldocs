@@ -1,4 +1,6 @@
-#!/usr/bin/env escript
+-module(specs_gen__R15_to_17).
+-export([main/1]).
+
 %% -*- erlang -*-
 %% %CopyrightBegin%
 %%
@@ -19,7 +21,7 @@
 
 %%% <script> [-I<dir>]... [-o<dir>] [-module Module] [File]
 %%%
-%%% Use EDoc and the layout module 'otp_specs' to create an XML file
+%%% Use EDoc and the layout module 'docgen_otp_specs' to create an XML file
 %%% containing Dialyzer types and specifications (-type, -spec).
 %%%
 %%% Options:
@@ -69,7 +71,7 @@ usage() ->
 call_edoc(FileSpec, InclFs, Dir) ->
     ReadOpts = [{includes, InclFs}, {preprocess, true}],
     ExtractOpts = [{report_missing_type, false}],
-    LayoutOpts = [{pretty_printer, erl_pp}, {layout, otp_specs}],
+    LayoutOpts = [{pretty_printer, erl_pp}, {layout, docgen_otp_specs}],
     File = case FileSpec of
                {file, File0} -> File0;
                {module, Module0} -> Module0
@@ -90,6 +92,7 @@ call_edoc(FileSpec, InclFs, Dir) ->
         _:_ ->
             io:format("EDoc could not process file '~s'\n", [File]),
             clean_up(Dir),
+            throw({?MODULE, "EDoc could not process file", File}),
             halt(3)
     end.
 
@@ -131,6 +134,7 @@ write_text(Text, File, Dir) ->
         {error, R} ->
             R1 = file:format_error(R),
             io:format("could not write file '~s': ~s\n", [File, R1]),
+            throw({?MODULE, "could not write file", File, R1}),
             halt(2)
     end.
 
@@ -144,6 +148,7 @@ rename(Dir, F) ->
         {error, R} ->
             R1 = file:format_error(R),
             io:format("could not rename file '~s': ~s\n", [New, R1]),
+            throw({?MODULE, "could not rename file", New, R1}),
             halt(2)
     end.
 
