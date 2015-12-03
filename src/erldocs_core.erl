@@ -146,11 +146,11 @@ ensure_docsrc (Conf, IncludePaths, AppDir) ->
 
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
-    XMLDir = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, bname(AppDir)]),
+    TmpRoot = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
+    XMLDir = jname(TmpRoot, bname(AppDir)),
     filelib:ensure_dir(XMLDir ++ "/"),
 
-    SpecsDest = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
-    lists:foreach(fun (File) -> gen_type_specs(SpecsDest, IncludePaths, File) end, ErlFiles),
+    lists:foreach(fun (File) -> gen_type_specs(TmpRoot, IncludePaths, File) end, ErlFiles),
 
     %% Return the complete list of XML files
     XMLFiles ++ tmp_cd(XMLDir, fun () ->
