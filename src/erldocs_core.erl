@@ -94,7 +94,7 @@ build_file_map (Conf, AppName, File) ->
             ?log("HTML generation for ~s skipped - ~p", [Module, File]),
             [];
         false ->
-            ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
+            ?log("Generating HTML - ~s ~p", [Module, File]),
             {Type, _Attr, Content} = read_xml(File),
 
             case is_buildable(Type) of
@@ -264,7 +264,7 @@ tmp_cd (Dir, Fun) ->
 module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
 
-    Html = "<h1>Module Index</h1><hr/><br><div>"
+    Html = "<h1>Module Index</h1><hr/><br>\n<div>"
         ++      xml_to_html(xml_index(Index))
         ++ "</div>",
     Args = [ {base,    kf(base,Conf)}
@@ -758,10 +758,12 @@ xml_to_html (Nbsp)
 xml_to_html ({Tag, Attr}) ->
     %% primarily for cases such as <a name="">
     fmt("<~ts ~ts>", [Tag, atos(Attr)]);
-xml_to_html ({Tag, Attr, []}) ->
-    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
+xml_to_html ({br, [], []}) ->
+    "<br>\n";
 xml_to_html ({Tag, [], []}) ->
     fmt("<~ts/>", [Tag]);
+xml_to_html ({Tag, Attr, []}) ->
+    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
 xml_to_html ({Tag, [], Child}) ->
     fmt("<~ts>~ts</~ts>", [Tag, xml_to_html(Child), Tag]);
 xml_to_html ({Tag, Attr, Child}) ->
