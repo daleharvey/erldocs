@@ -122,18 +122,22 @@ module_summary (cref, Xml) ->
     Sum.
 
 ensure_docsrc (Conf, IncludePaths, AppName, AppDir) ->
+    BuildingOTP = kf(building_otp, Conf),
     %% List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
 
     ErlFiles = filelib:wildcard(jname( AppDir,        "*.erl" ))
         ++     filelib:wildcard(jname([AppDir, "src", "*.erl"]))
-        ++ maybe_add_otp_preloaded(AppName, kf(building_otp,Conf)),
+        ++ maybe_add_otp_preloaded(AppName, BuildingOTP),
 
     %% Generate any missing module XML
-    SrcFiles = [filename:absname(File) ||
-                   File <- ErlFiles,
-                   not lists:member(bname(File, ".erl"), HandWritten)],
+    SrcFiles =
+        case BuildingOTP of
+            false -> [File || File <- ErlFiles,
+                              not lists:member(bname(File, ".erl"), HandWritten)];
+            _ ->     []
+        end,
 
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
