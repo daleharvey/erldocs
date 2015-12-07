@@ -229,8 +229,7 @@ gen_docsrc (IncludePaths, AppName, AppDir, SrcFiles, Dest) ->
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
     case catch (edoc:application(list_to_atom(AppName), AppDir, Opts)) of
         ok ->
-            Accr = fun (Filename, Acc) -> [Filename|Acc] end,
-            XmlFiles = filelib:fold_files(Dest, ".+\\.xml$", false, Accr, []),
+            XmlFiles = filelib:wildcard(jname(Dest, "*.xml")),
             ?log("Generated ~s XMLs: ~p", [AppName, XmlFiles]),
             XmlFiles;
 
