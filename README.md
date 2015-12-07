@@ -1,6 +1,8 @@
-# erldocs
+# erldocs [![Build Status](//travis-ci.org/erldocs/erldocs.svg?branch=master)](//travis-ci.org/erldocs/erldocs)
 This is the code used to generate documentation for erlang projects in the format of
 [erldocs.com](http://erldocs.com)
+
+
 
 ## Dependencies
 Erlang/OTP ≥ R13B04
