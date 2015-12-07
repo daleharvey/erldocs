@@ -443,7 +443,7 @@ make_name (Name) ->
             Name3 ++ "/" ++ integer_to_list(NArgs)
     end.
 
-'add .html' ("#"++Rest) ->
+'add .html' ("#" ++ Rest) ->
     "#"++ separate_f_from_a(Rest);
 'add .html' (Link) ->
     case string:tokens(Link, "#") of
@@ -460,22 +460,10 @@ tr__marker (FdashA) ->
     end.
 
 separate_f_from_a (FdashA) ->
-    separate_f_from_a(lists:reverse(FdashA), [], []).
-separate_f_from_a ([], Arity, AccF0) ->
-    AccF = lists:reverse(AccF0),
-    case Arity of
-        [] -> AccF;
-        _  -> AccF ++"/"++ Arity
-    end;
-separate_f_from_a ([C|Rest], AccA, []) ->
-    case C of
-        _  when $0 =< C andalso C =< $9 ->
-            separate_f_from_a(Rest, [C|AccA], []);
-        $- ->
-            separate_f_from_a([],      AccA,  Rest);
-        _  ->
-            separate_f_from_a([],      AccA,  [C|Rest])
-end.
+    case re:run(FdashA, "^(.+)[/-]([0-9])+$", [{capture,all_but_first,list}]) of
+        {match, [F,A]} -> F ++ "/" ++ A;
+        nomatch -> FdashA
+    end.
 
 
 %% Transforms erlang xml format to html
