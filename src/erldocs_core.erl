@@ -37,22 +37,25 @@ copy_static_files (Conf) ->
 -spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
     ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, [named_table, set, public]),
-    DidBuild = build([{building_otp,is_building_otp(Conf)} | Conf]),
+    DidBuild = build([ {building_otp,is_building_otp(kf(apps,Conf))} | Conf]),
     ?log("Woot, finished"),
     DidBuild.
 
-is_building_otp (Conf) ->
-    lists:any(fun is_containing_erlang_module/1, kf(apps,Conf)).
+is_building_otp ([]) -> false;
+is_building_otp ([AppDir|Rest]) ->
+    case find_erlang_module(AppDir) of
+        false -> is_building_otp(Rest);
+        Path -> {true, Path}
+    end.
 
--spec is_containing_erlang_module (file:name()) -> boolean().
-is_containing_erlang_module (AppDir) ->
-    ExitFast = fun (_Fn, _Acc) -> throw(found_erlang_erl) end,
+find_erlang_module (AppDir) ->
+    ExitFast = fun (Fn, _Acc) -> throw({found, Fn}) end,
     try filelib:fold_files(AppDir, "^erlang\\.erl$", true, ExitFast, not_found) of
         not_found -> false
     catch
-        found_erlang_erl ->
+        {found,Fn} ->
             ?log("building_otp: true"),
-            true
+            Fn
     end.
 
 
@@ -63,12 +66,12 @@ build (Conf) ->
     AppDirs = [Path || Path <- kf(apps,Conf), filelib:is_dir(Path)],
     IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
-    Fun   = fun (AppDir, Acc) -> build_apps(Conf, IncludePaths, AppDir, Acc) end,
+    Fun = fun (AppDir, Acc) -> build_apps(Conf, IncludePaths, bname(AppDir), AppDir, Acc) end,
     Index = lists:foldl(Fun, [], AppDirs),
 
     case length(kf(apps,Conf)) == length(Index) of
         true  ->
-            %% Only the "[application]" (inserted by build_apps/3) are present
+            %% Only the "[application]" (inserted by build_apps/5) are present
             %% in Index, thus:
             ?log("No documentation was generated!"),
             false;
@@ -79,46 +82,32 @@ build (Conf) ->
             true
     end.
 
-build_apps (Conf, IncludePaths, AppDir, Index) ->
-    AppName = bname(AppDir),
+build_apps (Conf, IncludePaths, AppName, AppDir, Index) ->
     ?log("Building ~s", [AppName]),
-    Files   = ensure_docsrc(Conf, IncludePaths, AppDir),
-    Map = fun (F) -> build_file_map(Conf, AppName, F) end,
-    [["app", AppName, AppName, "[application]"] |
-     pmapreduce(Map, fun lists:append/2, [], Files) ++ Index].
+    Files = ensure_docsrc(Conf, IncludePaths, AppName, AppDir),
+    Map = fun (File) -> build_file_map(Conf, AppName, bname(File,".xml"), File) end,
+    [ ["app", AppName, AppName, "[application]"]
+      | pmapreduce(Map, fun lists:append/2, [], Files)
+      ++ Index
+    ].
 
-build_file_map (Conf, AppName, File) ->
-    Module = bname(File, ".xml"),
+build_file_map (Conf, AppName, Module, File) ->
     case is_ignored(AppName, Module) of
         true ->
             ?log("HTML generation for ~s skipped - ~p", [Module, File]),
             [];
         false ->
-            ?log("Generating HTML - ~s ~p", [bname(File,".xml"), File]),
             {Type, _Attr, Content} = read_xml(File),
-
             case is_buildable(Type) of
                 false ->
                     ?log("HTML generation for ~s impossible - ~p", [Module, File]),
                     [];
                 true ->
-                    TypeSpecsFile = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, "specs_"++Module++".xml"]),
-                    case filelib:is_file(TypeSpecsFile) of
-                        false ->                      TypeSpecs = [];
-                        true ->
-                            case read_xml(TypeSpecsFile) of
-                                {error, _, _} ->      TypeSpecs = [];
-                                {module, _, Specs} -> TypeSpecs = strip_whitespace(Specs)
-                            end
-                    end,
-
+                    ?log("Generating HTML - ~s ~p", [Module, File]),
                     Xml = strip_whitespace(Content),
-
-                    %% strip silly shy characters
                     Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
-
+                    TypeSpecs = read_xml_specs(Conf, Module),
                     ok = render(AppName, Module, Content, TypeSpecs, Conf),
-
                     Sum = lists:flatten(module_summary(Type, Xml)),
                     [ ["mod", AppName, Module, Sum] | Funs]
             end
@@ -132,13 +121,14 @@ module_summary (cref, Xml) ->
     {_, [], Sum} = lists:keyfind(libsummary, 1, Xml),
     Sum.
 
-ensure_docsrc (Conf, IncludePaths, AppDir) ->
+ensure_docsrc (Conf, IncludePaths, AppName, AppDir) ->
     %% List any doc/src/*.xml files that exist in the source files
     XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
     HandWritten = [bname(File, ".xml") || File <- XMLFiles],
 
-    ErlFiles = filelib:wildcard(jname([AppDir,        "*.erl"]))
-        ++     filelib:wildcard(jname([AppDir, "src", "*.erl"])),
+    ErlFiles = filelib:wildcard(jname( AppDir,        "*.erl" ))
+        ++     filelib:wildcard(jname([AppDir, "src", "*.erl"]))
+        ++ maybe_add_otp_preloaded(AppName, kf(building_otp,Conf)),
 
     %% Generate any missing module XML
     SrcFiles = [filename:absname(File) ||
@@ -148,28 +138,50 @@ ensure_docsrc (Conf, IncludePaths, AppDir) ->
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
     TmpRoot = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
-    XMLDir  = jname(TmpRoot, bname(AppDir)),
+    XMLDir  = jname(TmpRoot, AppName),
     mkdir_p(XMLDir ++ "/"),
 
-    lists:foreach(fun (File) -> gen_type_specs(TmpRoot, IncludePaths, File) end, ErlFiles),
+    SpecsGenF = fun (File) -> gen_type_specs(IncludePaths, TmpRoot, File) end,
+    lists:foreach(SpecsGenF, ErlFiles),
 
     %% Return the complete list of XML files
-    XMLFiles ++ tmp_cd(XMLDir, fun () ->
-                                       gen_docsrc(AppDir, SrcFiles, IncludePaths, XMLDir)
-                               end).
+    F = fun () -> gen_docsrc(IncludePaths, AppName, AppDir, SrcFiles, XMLDir) end,
+    XMLFiles
+        ++ tmp_cd(XMLDir, F).
 
-gen_type_specs (SpecsDest, IncludePaths, ErlFile) ->
+maybe_add_otp_preloaded ("erts", {true, ErlangErl}) ->
+    ErlangErlAppDir = dname(dname(ErlangErl)),
+    filelib:wildcard(jname([ErlangErlAppDir, "src", "*.erl"]));
+maybe_add_otp_preloaded (_AppName, _) -> [].
+
+gen_type_specs (IncludePaths, SpecsDest, ErlFile) ->
     case erlang:system_info(otp_release) of
         [$R,$1,Digit|_] when Digit < $5 -> SpecsGenModule = specs_gen__below_R15;
         "R"++_ ->                          SpecsGenModule = specs_gen__R15_to_17;
         Vsn when Vsn < "18" ->             SpecsGenModule = specs_gen__R15_to_17;
-        _ ->                               SpecsGenModule = specs_gen__18_and_above
+        _Otherwise ->                      SpecsGenModule = specs_gen__18_and_above
     end,
     ?log("Generating Type Specs - ~p", [ErlFile]),
     Args = ["-o"++SpecsDest] ++ ["-I"++Inc || Inc <- IncludePaths] ++ [ErlFile],
     try SpecsGenModule:main(Args)
     catch _:_SpecsGenError ->
             ?log("Error generating type specs for ~p", [ErlFile])
+    end.
+
+%% @doc
+%% Read Erlang type specs from an XML file
+read_xml_specs (Conf, Module) ->
+    Fn = "specs_" ++ Module ++ ".xml",
+    File = jname([kf(dest,Conf), ?ERLDOCS_SPECS_TMP, Fn]),
+    case filelib:is_file(File) of
+        false -> [];
+        true ->
+            case read_xml(File) of
+                {error, _, _} -> [];
+                {module, _, Specs} ->
+                    ?log("Read XML Specs for ~s - ~p", [Fn, File]),
+                    strip_whitespace(Specs)
+            end
     end.
 
 includes (AppDir) ->
@@ -204,7 +216,7 @@ add_parents_too (Cwd, RevExp) ->
       | add_parents_too(Cwd, tl(RevExp))
     ].
 
-gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
+gen_docsrc (IncludePaths, AppName, AppDir, SrcFiles, Dest) ->
     Opts = [ {includes, IncludePaths}
            , {sort_functions, false}
            , {file_suffix, ?ERLDOCS_SPECS_TMP}
@@ -214,7 +226,6 @@ gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
            , {layout, docgen_edoc_xml_cb}
            ],
 
-    AppName = bname(AppDir),
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
     case catch (edoc:application(list_to_atom(AppName), AppDir, Opts)) of
         ok ->
@@ -227,16 +238,14 @@ gen_docsrc (AppDir, SrcFiles, IncludePaths, Dest) ->
             ?log("Error generating ~s XMLs. Using fallback ...", [AppName]),
             lists:foldl(
               fun (File, Acc) ->
-                      Basename = bname(File, ".erl"),
-                      DestFile = jname(Dest, Basename++".xml"),
-                      ?log("Generating XML ~s - ~s ~p -> ~p",
-                           [AppName,Basename,File,DestFile]),
+                      Module = bname(File, ".erl"),
+                      DestFile = jname(Dest, Module++".xml"),
+                      ?log("Generating XML ~s - ~s ~p -> ~p", [AppName,Module,File,DestFile]),
                       case catch (edoc:file(File, Opts)) of
                           ok ->
                               [DestFile | Acc];
                           Error ->
-                              ?log("Error generating XML (~p): ~p",
-                                   [File,Error]),
+                              ?log("Error generating XML (~p): ~p", [File,Error]),
                               Acc
                       end
               end, [], SrcFiles)
@@ -264,7 +273,7 @@ tmp_cd (Dir, Fun) ->
 module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
 
-    Html = "<h1>Module Index</h1><hr/><br><div>"
+    Html = "<h1>Module Index</h1><hr/><br>\n<div>"
         ++      xml_to_html(xml_index(Index))
         ++ "</div>",
     Args = [ {base,    kf(base,Conf)}
@@ -758,10 +767,12 @@ xml_to_html (Nbsp)
 xml_to_html ({Tag, Attr}) ->
     %% primarily for cases such as <a name="">
     fmt("<~ts ~ts>", [Tag, atos(Attr)]);
-xml_to_html ({Tag, Attr, []}) ->
-    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
+xml_to_html ({br, [], []}) ->
+    "<br>\n";
 xml_to_html ({Tag, [], []}) ->
     fmt("<~ts/>", [Tag]);
+xml_to_html ({Tag, Attr, []}) ->
+    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
 xml_to_html ({Tag, [], Child}) ->
     fmt("<~ts>~ts</~ts>", [Tag, xml_to_html(Child), Tag]);
 xml_to_html ({Tag, Attr, Child}) ->
@@ -790,7 +801,7 @@ htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 %% @doc
 %% Parse XML file against OTP's DTD, need to cd into the
 %% source directory because files are addressed relative to it
--spec read_xml (list()) -> tuple().
+-spec read_xml (file:name()) -> {atom(), _, _}.
 read_xml (XmlFile) ->
     ?log("Reading XML for ~p", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
