@@ -11,6 +11,8 @@
         , mapreduce/4
         , pmapreduce/4
         , pmapreduce/5
+
+        , maybe_delete_xmerl_table/0
         ]).
 
 -include("erldocs.hrl").
@@ -36,7 +38,7 @@ copy_static_files (Conf) ->
 %% appropriate function.
 -spec dispatch (list()) -> boolean().
 dispatch (Conf) ->
-    ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, [named_table, set, public]),
+    maybe_create_xmerl_table(),
     DidBuild = build([ {building_otp,is_building_otp(kf(apps,Conf))} | Conf]),
     ?log("Woot, finished"),
     DidBuild.
@@ -880,6 +882,25 @@ mkdir_p (Path) ->
     case filelib:ensure_dir(Path) of
         ok -> ok;
         {error, eexist} -> ok
+    end.
+
+maybe_create_xmerl_table () ->
+    case is_xmerl_table_created() of
+        true -> ok;
+        false ->
+            Opts = [named_table, set, public],
+            ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, Opts)
+    end.
+
+is_xmerl_table_created () ->
+    undefined /= ets:info(?ERLDOCS_XMERL_ETS_TABLE, compressed).
+
+%% @doc
+%% Ensure the table xmerl uses is deleted
+maybe_delete_xmerl_table () ->
+    case is_xmerl_table_created() of
+        false -> ok;
+        true -> ets:delete(?ERLDOCS_XMERL_ETS_TABLE)
     end.
 
 %% End of Module.
