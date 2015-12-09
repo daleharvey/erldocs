@@ -887,7 +887,7 @@ maybe_create_xmerl_table () ->
     case is_xmerl_table_created() of
         true -> ok;
         false ->
-            Opts = [named_table, set, public],
+            Opts = [named_table, ordered_set, public],
             ?ERLDOCS_XMERL_ETS_TABLE = ets:new(?ERLDOCS_XMERL_ETS_TABLE, Opts)
     end.
 
