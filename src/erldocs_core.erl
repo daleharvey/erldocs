@@ -124,38 +124,38 @@ module_summary (cref, Xml) ->
     Sum.
 
 ensure_docsrc (Conf, IncludePaths, AppName, AppDir) ->
-    BuildingOTP = kf(building_otp, Conf),
-    %% List any doc/src/*.xml files that exist in the source files
-    XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
-    HandWritten = [bname(File, ".xml") || File <- XMLFiles],
-
-    ErlFiles = filelib:wildcard(jname( AppDir,        "*.erl" ))
-        ++     filelib:wildcard(jname([AppDir, "src", "*.erl"]))
-        ++ maybe_add_otp_preloaded(AppName, BuildingOTP),
-
-    %% Generate any missing module XML
-    SrcFiles =
-        case BuildingOTP of
-            false -> [File || File <- ErlFiles,
-                              not lists:member(bname(File, ".erl"), HandWritten)];
-            _ ->     []
-        end,
-
     %% Output XML files to destination folder
     %% This prevents from polluting the source files
     TmpRoot = jname(kf(dest,Conf), ?ERLDOCS_SPECS_TMP),
     XMLDir  = jname(TmpRoot, AppName),
     mkdir_p(XMLDir ++ "/"),
 
+    %% List all *.erl under AppDir/src/
+    Erls = filelib:fold_files(jname(AppDir,"src"), "\\.erl$", true, fun cons/2, []),
+    XMLFiles = filelib:wildcard(jname([AppDir, "doc", "src", "*.xml"])),
+
+    case kf(building_otp, Conf) of
+        false ->
+            ErlFiles = filelib:wildcard(jname(AppDir, "*.erl")) ++ Erls,
+            HandWritten = [bname(File,".xml") || File <- XMLFiles],
+            NoXMLs = [File || File <- ErlFiles,
+                              not lists:member(bname(File,".erl"), HandWritten)],
+            %% Generate any missing module XML
+            F = fun () -> gen_docsrc(IncludePaths, AppName, AppDir, XMLDir, NoXMLs) end,
+            MissingXMLFiles = tmp_cd(XMLDir, F);
+
+        {true,ErlangErl} ->
+            ErlFiles = maybe_add_otp_preloaded(AppName, ErlangErl) ++ Erls,
+            MissingXMLFiles = []
+    end,
+
     SpecsGenF = fun (File) -> gen_type_specs(IncludePaths, TmpRoot, File) end,
     lists:foreach(SpecsGenF, ErlFiles),
 
     %% Return the complete list of XML files
-    F = fun () -> gen_docsrc(IncludePaths, AppName, AppDir, SrcFiles, XMLDir) end,
-    XMLFiles
-        ++ tmp_cd(XMLDir, F).
+    XMLFiles ++ MissingXMLFiles.
 
-maybe_add_otp_preloaded ("erts", {true, ErlangErl}) ->
+maybe_add_otp_preloaded ("erts", ErlangErl) ->
     ErlangErlAppDir = dname(dname(ErlangErl)),
     filelib:wildcard(jname([ErlangErlAppDir, "src", "*.erl"]));
 maybe_add_otp_preloaded (_AppName, _) -> [].
@@ -221,18 +221,20 @@ add_parents_too (Cwd, RevExp) ->
       | add_parents_too(Cwd, tl(RevExp))
     ].
 
-gen_docsrc (IncludePaths, AppName, AppDir, SrcFiles, Dest) ->
+gen_docsrc (IncludePaths, AppName, AppDir, Dest, SrcFiles) ->
+    App = list_to_atom(AppName),
     Opts = [ {includes, IncludePaths}
            , {sort_functions, false}
-           , {file_suffix, ?ERLDOCS_SPECS_TMP}
+           , {file_suffix, ".xml"}
            , {preprocess, true}
            , {dir, Dest}
            , {packages, false}  %% Find modules in subfolders of src/
            , {layout, docgen_edoc_xml_cb}
+           , {application, App}
            ],
 
     ?log("Generating XML for application ~s ~p -> ~p", [AppName,AppDir,Dest]),
-    case catch (edoc:application(list_to_atom(AppName), AppDir, Opts)) of
+    case catch (edoc:application(App, AppDir, Opts)) of
         ok ->
             XmlFiles = filelib:wildcard(jname(Dest, "*.xml")),
             ?log("Generated ~s XMLs: ~p", [AppName, XmlFiles]),
@@ -901,5 +903,7 @@ maybe_delete_xmerl_table () ->
         false -> ok;
         true -> ets:delete(?ERLDOCS_XMERL_ETS_TABLE)
     end.
+
+cons (H, T) -> [H | T].
 
 %% End of Module.

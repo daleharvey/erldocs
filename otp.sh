@@ -14,6 +14,9 @@ rm    -rf "$odir"/*
 [[ ! -x "$erldocs" ]] && [[ ! -L $"$erldocs" ]] && \
     echo "$erldocs executable not found!" && exit 1
 
+## ./configure && make && make docs
+# If you didn't: test -f lib/xmerl/doc/src/xmerl.xml is false
+
 "$erldocs"          \
     -o "$odir"      \
     "$idir"/lib/*   \

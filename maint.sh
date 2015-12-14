@@ -28,7 +28,8 @@ echo "Commencing pull & build of $release branch" \
     && git checkout -- . \
     && git checkout maint \
     && git pull origin maint \
-    && MAKEFLAGS=-j6 ./otp_build setup -a
+    && MAKEFLAGS=-j6 ./otp_build setup -a \
+    && MAKEFLAGS=-j6 make docs
 if [[ $? -ne 0 ]]; then
     echo "Could not make $release"
     cd -
