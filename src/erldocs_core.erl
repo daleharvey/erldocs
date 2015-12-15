@@ -184,7 +184,7 @@ read_xml_specs (Conf, Module) ->
             case read_xml(File) of
                 {error, _, _} -> [];
                 {module, _, Specs} ->
-                    ?log("Read XML Specs for ~s - ~p", [Fn, File]),
+                    ?log("Read XML Specs for ~s - '~s'", [Fn, File]),
                     strip_whitespace(Specs)
             end
     end.
@@ -651,7 +651,7 @@ find_spec (_Name, _Arity, []) -> [];
 find_spec (Name, Arity, [{spec, [], Specs} |Rest]) ->
     {_, _, [SpecName]}  = lists:keyfind(name, 1, Specs),
     {_, _, [ArityName]} = lists:keyfind(arity, 1, Specs),
-    case (SpecName =:= Name) and (ArityName =:= Arity) of
+    case (SpecName == Name) and (ArityName == Arity) of
         false ->
             find_spec(Name, Arity, Rest);
         true  ->
@@ -740,7 +740,7 @@ strip_whitespace (Else) ->
 
 'keeper?' (X) when is_tuple(X); is_number(X) ->
     true;
-'keeper?' (X) ->
+'keeper?' (X) when is_list(X) ->
     not lists:all(fun is_whitespace/1, X).
 
 is_whitespace ($\s) -> true;
@@ -793,11 +793,10 @@ htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
 htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
 
 %% @doc
-%% Parse XML file against OTP's DTD, need to cd into the
-%% source directory because files are addressed relative to it
+%% Parse XML file against OTP's DTD
 -spec read_xml (file:name()) -> {atom(), _, _}.
 read_xml (XmlFile) ->
-    ?log("Reading XML for ~p", [XmlFile]),
+    ?log("Reading XML for '~s'", [XmlFile]),
     DocgenDir = code:priv_dir(erl_docgen),
     Opts = [ {fetch_path, [ jname(DocgenDir, "dtd")
                           , jname(DocgenDir, "dtd_html_entities") ]}
