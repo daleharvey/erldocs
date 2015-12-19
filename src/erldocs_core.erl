@@ -278,10 +278,10 @@ tmp_cd (Dir, Fun) ->
 
 module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
-
-    Html = "<h1>Module Index</h1><hr/><br>\n<div>"
-        ++      xml_to_html(xml_index(Index))
-        ++ "</div>",
+    Html = [ "<h1>Module Index</h1><hr/><br>\n<div>"
+           ,   xml_to_html(xml_index(Index))
+           , "</div>"
+           ],
     Args = [ {base,    kf(base,Conf)}
            , {search_base, "./"}
            , {title,   "Module Index"}
@@ -289,7 +289,6 @@ module_index (Conf, Index) ->
            %% , {funs,    ""}
            , {ga,      kf(ga,Conf)}
            ],
-
     {ok, Data} = erldocs_dtl:render(Args),
     ok = file:write_file(jname(kf(dest,Conf), "index.html"), Data).
 
@@ -319,29 +318,29 @@ index_ordering ([Type, App, Mod, _Sum]) ->
 sort_index (A, B) ->
     index_ordering(A) =< index_ordering(B).
 
-html_encode (Str)  ->
+strip_apos (Str)  ->
     [C || C <- Str, C /= $'].
+strip_nl (Str) ->
+    [C || C <- Str, C /= $\n, C /= $\r].
 
 javascript_index (Conf, FIndex) ->
     ?log("Creating erldocs_index.js ..."),
-
     F = fun ([Else, App, NMod, Sum]) ->
                 [Else, App, NMod, fmt("~ts", [shorten(Sum)])]
         end,
-
     Sorted = lists:sort(fun sort_index/2, lists:map(F, FIndex)),
+
     Index =
         lists:map(
           fun ([A,B,C,[]]) ->
-                  fmt("['~s','~s','~s',[]]", [html_encode(X) || X <- [A,B,C]]);
+                  fmt("['~s','~s','~s',[]]", [strip_apos(X) || X <- [A,B,C]]);
               ([A,B,C,D]) ->
-                  fmt("['~s','~s','~s','~s']", [html_encode(X) || X <- [A,B,C,D]])
+                  fmt("['~s','~s','~s','~s']", [strip_apos(X) || X <- [A,B,C,D]])
           end,
           Sorted),
+    IndexStr = string:join([strip_nl(I) || I <- Index], ","),
 
-    Js = fmt("var index = [~s];",
-             [string:join([[C || C <- I, C /= $\n, C /= $\r] || I <- Index], ",")]),
-
+    Js = fmt("var index = [~s];", [IndexStr]),
     ok = file:write_file(jname(kf(dest,Conf), "erldocs_index.js"), Js).
 
 shorten (Str) ->
@@ -414,7 +413,7 @@ get_funs (App, Mod, {funcs, [], Funs}) ->
 fun_stuff (App, Mod, {func, [], Child}) ->
     case lists:keyfind(fsummary, 1, Child) of
         {fsummary, [], Xml} ->
-            Summary = shorten(xml_to_html(Xml));
+            Summary = shorten(lists:flatten(xml_to_html(Xml)));
         false ->
             Summary = ""
             %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
@@ -439,15 +438,15 @@ fun_stuff (_App, _Mod, _Funs) ->
 
 make_name (Name) ->
     Tmp = lists:flatten(Name),
-    case string:chr(Tmp, 40) of
+    case string:chr(Tmp, $() of
         0 ->
             ignore;
         Pos ->
             {Name2, Rest2} = lists:split(Pos-1, Tmp),
-            Name3          = lists:last(string:tokens(Name2, ":")),
+            FName          = lists:last(string:tokens(Name2, ":")),
             Args           = string:substr(Rest2, 2, string:chr(Rest2, $))-2),
             NArgs          = length(string:tokens(Args, ",")),
-            Name3 ++ "/" ++ integer_to_list(NArgs)
+            FName ++ "/" ++ integer_to_list(NArgs)
     end.
 
 'add .html' ("#" ++ Rest) ->
@@ -585,7 +584,8 @@ tr_erlref (E={type, [{name,TName}], []}, Acc) ->
         ignore -> E;
         {_ID, Child} -> {ul
                         , [{class, "type"}]
-                        , {li, [], {code, [], [Child]}} }
+                        , {li, [], {code, [], [Child]}}
+                        }
     end;
 
 tr_erlref ({name, [{name,Name}, {arity,N}, {clause_i,ClauseI}], []}, Acc)
@@ -713,10 +713,11 @@ tr__type_name (TName, NVars, Acc) ->
 
 
 tr__category (Name, ID, Child) ->
-    {'div', [{id,ID}, {class,"category"}]
+    { 'div'
+    , [{id,ID}, {class,"category"}]
     , [ {h4, [], [{a, [{href,"#"++ID}], [Name]}]}
       , {hr, [], []}
-        | Child
+      | Child
       ]
     }.
 
@@ -753,7 +754,7 @@ is_whitespace (_) -> false.
 %% {tag, [{listof, "attributes"}], ["list of children"]}
 %% into <tag listof="attributes">list of children</tag>
 xml_to_html ({nbsp, [], Child}) ->
-    "&nbsp;" ++ xml_to_html(Child);
+    ["&nbsp;", xml_to_html(Child)];
 xml_to_html (Nbsp)
   when element(1, Nbsp) =:= nbsp ->
     "&nbsp;";
@@ -774,7 +775,7 @@ xml_to_html ({Tag, Attr, Child}) ->
 xml_to_html (List) when is_list(List) ->
     case io_lib:char_list(List) of
         true  -> htmlchars(List);
-        false -> lists:flatten([xml_to_html(X) || X <- List])
+        false -> [xml_to_html(X) || X <- List]
     end;
 xml_to_html (Else) ->
     Else.
@@ -782,11 +783,11 @@ xml_to_html (Else) ->
 
 atos ([])                      -> "";
 atos (List) when is_list(List) -> string:join([ atos(X) || X <- List ], " ");
-atos ({Name, Val})             -> atom_to_list(Name) ++ "=\""++Val++"\"".
+atos ({Name, Val})             -> [atom_to_list(Name), "=\"", Val, "\""].
 
 %% @doc Convert ascii into html characters
 htmlchars (List) -> htmlchars(List, []).
-htmlchars ("", Acc) -> lists:flatten(lists:reverse(Acc));
+htmlchars ("", Acc) -> lists:reverse(Acc);
 htmlchars ([$<  |Rest], Acc) -> htmlchars(Rest, ["&lt;"  |Acc]);
 htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
 %htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
@@ -904,5 +905,8 @@ maybe_delete_xmerl_table () ->
     end.
 
 cons (H, T) -> [H | T].
+
+%iolists_flatten/1
+%iolists_join/2
 
 %% End of Module.
