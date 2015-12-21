@@ -102,7 +102,7 @@ build_file_map (Conf, AppName, Module, File) ->
             {Type, _Attr, Content} = read_xml(File),
             case is_buildable(Type) of
                 false ->
-                    ?log("HTML generation for ~s impossible - ~p", [Module, File]),
+                    %% ?log("HTML generation for ~s impossible - ~p", [Module, File]),
                     [];
                 true ->
                     ?log("Generating HTML - ~s ~p", [Module, File]),
