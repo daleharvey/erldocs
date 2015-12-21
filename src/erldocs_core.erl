@@ -69,7 +69,7 @@ build (Conf) ->
     IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
     BuildApps = fun (AppDir) -> build_apps(Conf, IncludePaths, bname(AppDir), AppDir) end,
-    Index = lists:flatmap(BuildApps, AppDirs),
+    Index = [I || I <- lists:flatmap(BuildApps, AppDirs), I /= ignore],
 
     case length(kf(apps,Conf)) == length(Index) of
         true ->
@@ -107,7 +107,7 @@ build_file_map (Conf, AppName, Module, File) ->
                 true ->
                     ?log("Generating HTML - ~s ~p", [Module, File]),
                     Xml = strip_whitespace(Content),
-                    Funs = get_funs(AppName, Module, lists:keyfind(funcs, 1, Xml)),
+                    Funs = get_funs(AppName, Module, Xml),
                     TypeSpecs = read_xml_specs(Conf, Module),
                     ok = render(AppName, Module, Content, TypeSpecs, Conf),
                     Sum = lists:flatten(module_summary(Type, Xml)),
@@ -307,16 +307,18 @@ module_index (Conf, Index) ->
     ok = file:write_file(Path, Data).
 
 index_to_xml (SortedIndex) ->
-    lists:flatmap(
-      fun ({"app", App, _,  _Sum}) ->
-              [{a, [{name, App}]}, {h4, [], [App]}];
-          ({"mod", App, Mod, Sum}) ->
+    [ case I of
+          {"app", App, _,  _Sum} ->
+              {h4, [{id, "app-"++App}], [App]};
+          {"mod", App, Mod, Sum} ->
               Url = jname(App, Mod++".html"),
-              [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
-          ({"fun", _App, _MFA, _Sum}) ->
-              []
-      end,
-      SortedIndex).
+              {p, [], [ {a, [{href, Url}], [Mod]}
+                      , {br, [], []}
+                      , Sum
+                      ]};
+          {"fun", _App, _MFA, _Sum} ->
+              <<>>
+      end || I <- SortedIndex ].
 
 
 sort_index (Index) ->
@@ -394,7 +396,6 @@ render (Fun, List, Acc) when is_list(List) ->
                         {NAcc, NEl} = render(Fun, X, Ac),
                         {NAcc, [NEl | L]}
                 end,
-
             {Ac, L} = lists:foldl(F, {Acc, []}, List),
             {Ac, lists:reverse(L)}
     end;
@@ -409,34 +410,36 @@ render (Fun, Element, Acc) ->
             (Else, NAcc) ->
                 {NAcc, Else}
         end,
-
     case Fun(Element, Acc) of
         {El, NAcc} -> F(El, NAcc);
         El         -> F(El, Acc)
     end.
 
-get_funs (_App, _Mod, false) -> [];
-get_funs (App, Mod, {funcs, [], Funs}) ->
-    F = fun (X) -> fun_stuff(App, Mod, X) end,
-    lists:flatmap(F, Funs).
+get_funs (App, Mod, Xml) ->
+    case lists:keyfind(funcs, 1, Xml) of
+        false -> [];
+        {funcs, [], Funs} ->
+            F = fun (X) -> fun_stuff(App, Mod, X) end,
+            lists:flatmap(F, Funs)
+    end.
 
-fun_stuff (App, Mod, {func, [], Child}) ->
-    Summary = function_summary(Child),
-    F = fun ({name, [], Name}, Acc) ->
-                case make_name(Name) of
-                    ignore -> Acc;
-                    NName  ->
-                        [ {"fun", App, Mod++":"++NName, Summary} | Acc ]
-                end;
-            ({name, [{name,Name}, {arity,Arity}], []}, Acc) ->
-                [ {"fun", App, Mod++":"++Name++"/"++Arity, Summary} | Acc ];
-            ({name, [{name,Name}, {arity,Arity}, {clause_i,"1"}], []}, Acc) ->
-                [ {"fun", App, Mod++":"++Name++"/"++Arity, Summary} | Acc ];
-            (_Else, Acc) -> Acc
-        end,
-    lists:foldl(F, [], Child);
-
-fun_stuff (_App, _Mod, _Funs) ->
+fun_stuff (App, Mod, {func, [], Children}) ->
+    Summary = function_summary(Children),
+    [ case Child of
+          {name, [], Name} ->
+              case make_name(Name) of
+                  ignore -> ignore;
+                  NName ->
+                      {"fun", App, Mod++":"++NName, Summary}
+              end;
+          {name, [{name,Name}, {arity,Arity}], []} ->
+              {"fun", App, Mod++":"++Name++"/"++Arity, Summary};
+          {name, [{name,Name}, {arity,Arity}, {clause_i,"1"}], []} ->
+              {"fun", App, Mod++":"++Name++"/"++Arity, Summary};
+          _Else ->
+              ignore
+      end || Child <- Children ];
+fun_stuff (_App, _Mod, _Else) ->
     [].
 
 make_name (Name) ->
