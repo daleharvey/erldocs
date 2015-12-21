@@ -318,33 +318,34 @@ index_ordering ([Type, App, Mod, _Sum]) ->
 sort_index (A, B) ->
     index_ordering(A) =< index_ordering(B).
 
-strip_apos (Str)  ->
-    [C || C <- Str, C /= $'].
-strip_nl (Str) ->
-    [C || C <- Str, C /= $\n, C /= $\r].
+js_strip (Str) ->
+    [C || C <- Str, C /= $\n, C /= $\r, C /= $'].
 
 javascript_index (Conf, FIndex) ->
     ?log("Creating erldocs_index.js ..."),
-    F = fun ([Else, App, NMod, Sum]) ->
-                [Else, App, NMod, fmt("~ts", [shorten(Sum)])]
-        end,
-    Sorted = lists:sort(fun sort_index/2, lists:map(F, FIndex)),
+    Sorted = lists:sort(fun sort_index/2, FIndex),
 
     Index =
         lists:map(
-          fun ([A,B,C,[]]) ->
-                  fmt("['~s','~s','~s',[]]", [strip_apos(X) || X <- [A,B,C]]);
-              ([A,B,C,D]) ->
-                  fmt("['~s','~s','~s','~s']", [strip_apos(X) || X <- [A,B,C,D]])
+          fun ([A,B,C,D]) ->
+                  [ ",['", js_strip(A)
+                  , "','", js_strip(B)
+                  , "','", js_strip(C)
+                  , "','", js_strip(D), "']"
+                  ]
           end,
           Sorted),
-    IndexStr = string:join([strip_nl(I) || I <- Index], ","),
+    IndexStr = iolists_tl(Index), %% Removes leading $,
 
-    Js = fmt("var index = [~s];", [IndexStr]),
-    ok = file:write_file(jname(kf(dest,Conf), "erldocs_index.js"), Js).
+    %% io:format("bin ~s\n", [iolists_flatten(IndexStr)]),
+    Data = ["var index = [", IndexStr, "];"],
+    Path = jname(kf(dest,Conf), "erldocs_index.js"),
+    ok = file:write_file(Path, Data).
 
 shorten (Str) ->
-    string:substr(Str, 1, 50).
+    Lines = string:tokens(lists:flatten(Str), "\r\n"),
+    Clean = string:join(lists:map(fun string:strip/1, Lines), " "),
+    string:substr(Clean, 1, 50).
 
 %% Note: handles both erlref and cref types
 render (App, Mod, Xml, Types, Conf) ->
@@ -361,9 +362,11 @@ render (App, Mod, Xml, Types, Conf) ->
 
     case kf(base,Conf) of %this is awkward
         "./" ->  %% Default value. In the default case
-            Base = "../";  %% … files are up one leve.
-        Other -> Base = Other
+            Base = "../";  %% … files are up one level
+        Other ->
+            Base = Other
     end,
+
     Args = [ {base,    Base}
            , {search_base, "../"}
            , {title,   Mod ++ " (" ++ App ++ ") - "}
@@ -413,7 +416,7 @@ get_funs (App, Mod, {funcs, [], Funs}) ->
 fun_stuff (App, Mod, {func, [], Child}) ->
     case lists:keyfind(fsummary, 1, Child) of
         {fsummary, [], Xml} ->
-            Summary = shorten(lists:flatten(xml_to_html(Xml)));
+            Summary = shorten(xml_to_html(Xml));
         false ->
             Summary = ""
             %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
@@ -758,40 +761,37 @@ xml_to_html ({nbsp, [], Child}) ->
 xml_to_html (Nbsp)
   when element(1, Nbsp) =:= nbsp ->
     "&nbsp;";
-
-xml_to_html ({Tag, Attr}) ->
-    %% primarily for cases such as <a name="">
-    fmt("<~ts ~ts>", [Tag, atos(Attr)]);
 xml_to_html ({br, [], []}) ->
     "<br>\n";
-xml_to_html ({Tag, [], []}) ->
-    fmt("<~ts/>", [Tag]);
-xml_to_html ({Tag, Attr, []}) ->
-    fmt("<~ts ~ts/>", [Tag, atos(Attr)]);
-xml_to_html ({Tag, [], Child}) ->
-    fmt("<~ts>~ts</~ts>", [Tag, xml_to_html(Child), Tag]);
-xml_to_html ({Tag, Attr, Child}) ->
-    fmt("<~ts ~ts>~ts</~ts>", [Tag, atos(Attr), xml_to_html(Child), Tag]);
-xml_to_html (List) when is_list(List) ->
-    case io_lib:char_list(List) of
-        true  -> htmlchars(List);
-        false -> [xml_to_html(X) || X <- List]
-    end;
-xml_to_html (Else) ->
-    Else.
 
+xml_to_html ({Tag, Attr}) ->
+    io_lib:format("<~ts ~ts>",
+                  [atom_to_list(Tag), atos(Attr)]);
+xml_to_html ({Tag, [], []}) ->
+    io_lib:format("<~ts/>",
+                  [atom_to_list(Tag)]);
+xml_to_html ({Tag, Attr, []}) ->
+    io_lib:format("<~ts ~ts/>",
+                  [atom_to_list(Tag), atos(Attr)]);
+xml_to_html ({Tag, [], Child}) ->
+    io_lib:format("<~ts>~ts</~ts>",
+                  [atom_to_list(Tag), xml_to_html(Child), atom_to_list(Tag)]);
+xml_to_html ({Tag, Attr, Child}) ->
+    io_lib:format("<~ts ~ts>~ts</~ts>",
+                  [atom_to_list(Tag), atos(Attr), xml_to_html(Child), atom_to_list(Tag)]);
+xml_to_html ([H | T]) ->
+    [xml_to_html(H) | xml_to_html(T)];
+xml_to_html (Else) ->
+    htmlchar(Else).
 
 atos ([])                      -> "";
-atos (List) when is_list(List) -> string:join([ atos(X) || X <- List ], " ");
+atos (List) when is_list(List) -> iolists_join($\s, [atos(X) || X <- List]);
 atos ({Name, Val})             -> [atom_to_list(Name), "=\"", Val, "\""].
 
-%% @doc Convert ascii into html characters
-htmlchars (List) -> htmlchars(List, []).
-htmlchars ("", Acc) -> lists:reverse(Acc);
-htmlchars ([$<  |Rest], Acc) -> htmlchars(Rest, ["&lt;"  |Acc]);
-htmlchars ([$>  |Rest], Acc) -> htmlchars(Rest, ["&gt;"  |Acc]);
-%htmlchars ([$\s |Rest], Acc) -> htmlchars(Rest, ["&nbsp;"|Acc]);
-htmlchars ([Else|Rest], Acc) -> htmlchars(Rest, [Else    |Acc]).
+htmlchar ($<) -> "&lt;";
+htmlchar ($>) -> "&gt;";
+htmlchar (Else) -> Else.
+
 
 %% @doc
 %% Parse XML file against OTP's DTD
@@ -811,10 +811,6 @@ read_xml (XmlFile) ->
             ?log("Error in read_xml File ~p Erro ~p", [XmlFile,Error]),
             throw({error_in_read_xml, XmlFile, Error})
     end.
-
-%% lazy shorthand
-fmt (Format, Args) ->
-    lists:flatten(io_lib:format(Format, Args)).
 
 %% @doc shorthand for lists:keyfind
 -spec kf (_, list()) -> _.
@@ -906,7 +902,22 @@ maybe_delete_xmerl_table () ->
 
 cons (H, T) -> [H | T].
 
-%iolists_flatten/1
-%iolists_join/2
+
+iolists_join (_, []) -> [];
+iolists_join (_, [H]) -> [H];
+iolists_join (Sep, [H|T]) ->
+    [H] ++ [[Sep,E] || E <- T].
+
+iolists_tl ([H|T])
+  when is_list(H) ->
+    [iolists_tl(H)|T];
+iolists_tl ([_|T]) ->
+    T.
+
+%% iolists_flatten ([]) -> [];
+%% iolists_flatten ([H|T]) ->
+%%     iolists_flatten(H) ++ iolists_flatten(T);
+%% iolists_flatten (NotAList) ->
+%%     [NotAList].
 
 %% End of Module.
