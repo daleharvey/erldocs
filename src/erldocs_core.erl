@@ -68,29 +68,29 @@ build (Conf) ->
     AppDirs = [Path || Path <- kf(apps,Conf), filelib:is_dir(Path)],
     IncludePaths = lists:flatmap(fun includes/1, AppDirs),
 
-    Fun = fun (AppDir, Acc) -> build_apps(Conf, IncludePaths, bname(AppDir), AppDir, Acc) end,
-    Index = lists:foldl(Fun, [], AppDirs),
+    BuildApps = fun (AppDir) -> build_apps(Conf, IncludePaths, bname(AppDir), AppDir) end,
+    Index = lists:flatmap(BuildApps, AppDirs),
 
     case length(kf(apps,Conf)) == length(Index) of
-        true  ->
+        true ->
             %% Only the "[application]" (inserted by build_apps/5) are present
             %% in Index, thus:
             ?log("No documentation was generated!"),
             false;
         false ->
-            ok = module_index(Conf, Index),
-            ok = javascript_index(Conf, Index),
+            SortedIndex = sort_index(Index),
+            ok = module_index(Conf, SortedIndex),
+            ok = javascript_index(Conf, SortedIndex),
             ok = copy_static_files(Conf),
             true
     end.
 
-build_apps (Conf, IncludePaths, AppName, AppDir, Index) ->
+build_apps (Conf, IncludePaths, AppName, AppDir) ->
     ?log("Building ~s", [AppName]),
     Files = ensure_docsrc(Conf, IncludePaths, AppName, AppDir),
     Map = fun (File) -> build_file_map(Conf, AppName, bname(File,".xml"), File) end,
-    [ ["app", AppName, AppName, "[application]"]
+    [ {"app", AppName, AppName, "[application]"}
       | pmapreduce(Map, fun lists:append/2, [], Files)
-      ++ Index
     ].
 
 build_file_map (Conf, AppName, Module, File) ->
@@ -111,17 +111,30 @@ build_file_map (Conf, AppName, Module, File) ->
                     TypeSpecs = read_xml_specs(Conf, Module),
                     ok = render(AppName, Module, Content, TypeSpecs, Conf),
                     Sum = lists:flatten(module_summary(Type, Xml)),
-                    [ ["mod", AppName, Module, Sum] | Funs]
+                    [ {"mod", AppName, Module, Sum} | Funs]
             end
     end.
 
 module_summary (erlref, Xml) ->
     {_, [], Sum} = lists:keyfind(modulesummary, 1, Xml),
-    unicode:characters_to_list(
-      lists:filter(fun (X) -> not is_tuple(X) end, Sum));
+    unicode:characters_to_list([X || X <- Sum, not is_tuple(X)]);
 module_summary (cref, Xml) ->
     {_, [], Sum} = lists:keyfind(libsummary, 1, Xml),
     Sum.
+
+function_summary (FuncXml) ->
+    case lists:keyfind(fsummary, 1, FuncXml) of
+        {fsummary, [], Xml} ->
+            shorten(xml_to_html(Xml));
+        false -> ""
+                 %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
+                 %%  but nametext instead. In such cases fsummary is ignored anyway.
+    end.
+
+shorten (Str) ->
+    Lines = string:tokens(lists:flatten(Str), "\r\n"),
+    Clean = string:join(lists:map(fun string:strip/1, Lines), " "),
+    string:substr(Clean, 1, 50).
 
 ensure_docsrc (Conf, IncludePaths, AppName, AppDir) ->
     %% Output XML files to destination folder
@@ -279,7 +292,7 @@ tmp_cd (Dir, Fun) ->
 module_index (Conf, Index) ->
     ?log("Creating index.html ..."),
     Html = [ "<h1>Module Index</h1><hr/><br>\n<div>"
-           ,   xml_to_html(xml_index(Index))
+           ,   xml_to_html(index_to_xml(Index))
            , "</div>"
            ],
     Args = [ {base,    kf(base,Conf)}
@@ -290,62 +303,56 @@ module_index (Conf, Index) ->
            , {ga,      kf(ga,Conf)}
            ],
     {ok, Data} = erldocs_dtl:render(Args),
-    ok = file:write_file(jname(kf(dest,Conf), "index.html"), Data).
+    Path = jname(kf(dest,Conf), "index.html"),
+    ok = file:write_file(Path, Data).
 
-xml_index (L) ->
-    Sorted = lists:sort(fun sort_index/2, L),
+index_to_xml (SortedIndex) ->
     lists:flatmap(
-      fun (["app", App, _,  _Sum]) ->
+      fun ({"app", App, _,  _Sum}) ->
               [{a, [{name, App}]}, {h4, [], [App]}];
-          (["mod", App, Mod, Sum]) ->
+          ({"mod", App, Mod, Sum}) ->
               Url = jname(App, Mod++".html"),
               [{p,[], [{a, [{href, Url}], [Mod]}, {br,[],[]}, Sum]}];
-          (_) ->
+          ({"fun", _App, _MFA, _Sum}) ->
               []
       end,
-      Sorted).
+      SortedIndex).
 
-index_ordering ([Type, App, Mod, _Sum]) ->
+
+sort_index (Index) ->
+    lists:sort(fun compare_index_items/2, Index).
+
+compare_index_items (Lhs, Rhs) ->
+    index_ordering(Lhs) =< index_ordering(Rhs).
+
+index_ordering ({Type, App, Mod, _Sum}) ->
     [ string:to_lower(App)
-    , case Type of
-          "app" -> 1;
-          "mod" -> 2;
-          "fun" -> 3
-      end
+    , index_item(Type)
     , string:to_lower(Mod)
     ].
 
-sort_index (A, B) ->
-    index_ordering(A) =< index_ordering(B).
+index_item ("app") -> 1;
+index_item ("mod") -> 2;
+index_item ("fun") -> 3.
+
 
 js_strip (Str) ->
     [C || C <- Str, C /= $\n, C /= $\r, C /= $'].
 
-javascript_index (Conf, FIndex) ->
+javascript_index (Conf, SortedIndex) ->
     ?log("Creating erldocs_index.js ..."),
-    Sorted = lists:sort(fun sort_index/2, FIndex),
-
-    Index =
-        lists:map(
-          fun ([A,B,C,D]) ->
-                  [ ",['", js_strip(A)
-                  , "','", js_strip(B)
-                  , "','", js_strip(C)
-                  , "','", js_strip(D), "']"
-                  ]
-          end,
-          Sorted),
-    IndexStr = iolists_tl(Index), %% Removes leading $,
-
+    IndexStr = iolists_tl(  %% Removes leading $,
+                 [ [ ",['", js_strip(A)
+                   , "','", js_strip(B)
+                   , "','", js_strip(C)
+                   , "','", js_strip(D), "']"
+                   ]
+                   || {A,B,C,D} <- SortedIndex ]
+                ),
     %% io:format("bin ~s\n", [iolists_flatten(IndexStr)]),
     Data = ["var index = [", IndexStr, "];"],
     Path = jname(kf(dest,Conf), "erldocs_index.js"),
     ok = file:write_file(Path, Data).
-
-shorten (Str) ->
-    Lines = string:tokens(lists:flatten(Str), "\r\n"),
-    Clean = string:join(lists:map(fun string:strip/1, Lines), " "),
-    string:substr(Clean, 1, 50).
 
 %% Note: handles both erlref and cref types
 render (App, Mod, Xml, Types, Conf) ->
@@ -355,7 +362,7 @@ render (App, Mod, Xml, Types, Conf) ->
     Acc = [{ids,[]}, {list,ul}, {functions,[]}, {types,Types}],
 
     {[_Id, _List, {functions,_Funs}, {types,_Types}], NXml}
-        = render(fun tr_erlref/2,  Xml, Acc),
+        = render(fun tr_erlref/2, Xml, Acc),
 
 %%  XmlFuns = [{li, [], [{a, [{href,"#"++X}], [X]}]}
 %%              || X <- lists:reverse(Funs) ],
@@ -410,28 +417,21 @@ render (Fun, Element, Acc) ->
 
 get_funs (_App, _Mod, false) -> [];
 get_funs (App, Mod, {funcs, [], Funs}) ->
-    F = fun (X, Acc) -> fun_stuff(App, Mod, X) ++ Acc end,
-    lists:foldl(F, [], Funs).
+    F = fun (X) -> fun_stuff(App, Mod, X) end,
+    lists:flatmap(F, Funs).
 
 fun_stuff (App, Mod, {func, [], Child}) ->
-    case lists:keyfind(fsummary, 1, Child) of
-        {fsummary, [], Xml} ->
-            Summary = shorten(xml_to_html(Xml));
-        false ->
-            Summary = ""
-            %% Things like 'ose_erl_driver.xml' (C drivers) don't have fsummary
-            %%  but nametext instead. In such cases fsummary is ignored anyway.
-    end,
-
+    Summary = function_summary(Child),
     F = fun ({name, [], Name}, Acc) ->
                 case make_name(Name) of
                     ignore -> Acc;
-                    NName  -> [ ["fun", App, Mod++":"++NName, Summary] | Acc ]
+                    NName  ->
+                        [ {"fun", App, Mod++":"++NName, Summary} | Acc ]
                 end;
             ({name, [{name,Name}, {arity,Arity}], []}, Acc) ->
-                [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
+                [ {"fun", App, Mod++":"++Name++"/"++Arity, Summary} | Acc ];
             ({name, [{name,Name}, {arity,Arity}, {clause_i,"1"}], []}, Acc) ->
-                [ ["fun", App, Mod++":"++Name++"/"++Arity, Summary] | Acc ];
+                [ {"fun", App, Mod++":"++Name++"/"++Arity, Summary} | Acc ];
             (_Else, Acc) -> Acc
         end,
     lists:foldl(F, [], Child);
@@ -812,7 +812,6 @@ read_xml (XmlFile) ->
             throw({error_in_read_xml, XmlFile, Error})
     end.
 
-%% @doc shorthand for lists:keyfind
 -spec kf (_, list()) -> _.
 kf (Key, Conf) ->
     {Key, Val} = lists:keyfind(Key, 1, Conf),
