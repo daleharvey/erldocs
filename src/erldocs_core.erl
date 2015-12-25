@@ -15,6 +15,11 @@
         , maybe_delete_xmerl_table/0
         ]).
 
+-ifdef(TEST).
+- export([includes/1]).
+- export([filename__remove_prefix/2]).
+-endif.
+
 -include("erldocs.hrl").
 
 -define(log(Str, Args), io:format(Str++"\n", Args)).
@@ -66,7 +71,7 @@ find_erlang_module (AppDir) ->
 build (Conf) ->
     mkdir_p(kf(dest, Conf)),
     AppDirs = [Path || Path <- kf(apps,Conf), filelib:is_dir(Path)],
-    IncludePaths = lists:flatmap(fun includes/1, AppDirs),
+    IncludePaths = lists:usort(lists:flatmap(fun includes/1, AppDirs)),
 
     BuildApps = fun (AppDir) -> build_apps(Conf, IncludePaths, bname(AppDir), AppDir) end,
     Index = [I || I <- lists:flatmap(BuildApps, AppDirs), I /= ignore],
@@ -203,36 +208,32 @@ read_xml_specs (Conf, Module) ->
     end.
 
 includes (AppDir) ->
-    {ok, Cwd} = file:get_cwd(),
-    CwdLen = length(Cwd),
-    %% Remove Cwd plus trailing slash
-    Relativer = fun (Path) -> string:substr(Path, CwdLen + 2) end,
-    F = fun (File, Acc) -> push_dirname(Relativer, File, Acc) end,
-    lists:usort(
-      add_parents_too(Cwd, Relativer,
-        lists:usort(
-          filelib:fold_files(AppDir, "\\.hrl$", true, F, [])
-         ))).
+    Hrls = filelib:fold_files(AppDir, "\\.hrl$", true, fun cons/2, []),
+    F = fun (Hrl) -> includes_parents(AppDir, Hrl) end,
+    lists:usort([AppDir, dname(AppDir)] ++
+                    lists:flatmap(F, Hrls)).
 
-push_dirname (Relativer, File, T) ->
-    Dirname = dname(File),
-    Exploded = filename:split(Relativer(Dirname)),
-    case lists:member("test", Exploded) of
-        true -> T;
-        false -> [Dirname | T]
+includes_parents (AppDir, Hrl) ->
+    RelativeHrl = filename__remove_prefix(AppDir, Hrl),
+    includes_parents(AppDir, dname(RelativeHrl), []).
+includes_parents (_, ".", Acc) -> Acc;
+includes_parents (AppDir, Parent, Acc) ->
+    case lists:member("test", filename:split(Parent)) of
+        true  -> NewAcc = Acc;
+        false -> NewAcc = [jname(AppDir,Parent) | Acc]
+    end,
+    includes_parents(AppDir, dname(Parent), NewAcc).
+
+filename__remove_prefix (Prefix, Path) ->
+    case lists__remove_prefix(filename:split(Prefix), filename:split(Path)) of
+        "" -> "";
+        Exploded -> filename:join(Exploded)
     end.
 
-add_parents_too (Cwd, Relativer, Dirs) ->
-    lists:flatmap(
-      fun (Dir) ->
-              add_parents_too(Cwd, lists:reverse(filename:split(Relativer(Dir))))
-      end, Dirs).
-add_parents_too (Cwd, [Dirname]) ->
-    [jname(Cwd, Dirname)];
-add_parents_too (Cwd, RevExp) ->
-    [ jname([Cwd] ++ lists:reverse(RevExp))
-      | add_parents_too(Cwd, tl(RevExp))
-    ].
+lists__remove_prefix ([A|Prefix], [A|Rest]) ->
+    lists__remove_prefix(Prefix, Rest);
+lists__remove_prefix (_, Rest) ->
+    Rest.
 
 gen_docsrc (IncludePaths, AppName, AppDir, Dest, SrcFiles) ->
     App = list_to_atom(AppName),

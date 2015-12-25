@@ -14,9 +14,11 @@ ERLCFLAGS += +debug_info
 clean: clean-ebin
 
 distclean: clean clean-escript clean-deps
-	$(if $(wildcard erl.mk), rm erl.mk   )
+	$(if $(wildcard erl.mk), rm erl.mk)
 
-test:
+debug: debug-app
+
+test: eunit.erldocs_core
 	./test/check.sh
 #	./test/test.sh /tmp/erldocs.git
 
