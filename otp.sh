@@ -12,10 +12,10 @@ erldocs='./erldocs'
 mkdir -p  "$odir"
 rm    -rf "$odir"/*
 [[ ! -x "$erldocs" ]] && [[ ! -L $"$erldocs" ]] && \
-    echo "$erldocs executable not found!" && exit 1
+    echo "$erldocs executable not found!" && exit 2
 
-## ./configure && make && make docs
-# If you didn't: test -f lib/xmerl/doc/src/xmerl.xml is false
+[[ ! -f "$idir"/lib/xmerl/doc/src/xmerl.xml ]] && \
+    echo "Please: cd '$idir'; ./configure && make && make docs; cd -" && exit 3
 
 "$erldocs"          \
     -o "$odir"      \

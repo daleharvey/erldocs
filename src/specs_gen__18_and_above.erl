@@ -1,3 +1,4 @@
+%% @private
 -module(specs_gen__18_and_above).
 -export([main/1]).
 

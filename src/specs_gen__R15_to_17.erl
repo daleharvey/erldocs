@@ -1,3 +1,4 @@
+%% @private
 -module(specs_gen__R15_to_17).
 -export([main/1]).
 

@@ -18,7 +18,8 @@
 %%  false if none was generated.
 -spec main (_) -> boolean().
 main (Args=[_|_]) ->
-    parse(Args, #conf{});
+    PropList = parse(Args, #conf{}),
+    erldocs_core:dispatch(PropList);
 main (_) ->
     ok = io:setopts([{encoding, unicode}]),
     Arg0 = escript:script_name(),
@@ -34,11 +35,11 @@ parse ([], Conf) ->
       []   -> Dirs = [cwd()];
       Else -> Dirs = Else
     end,
-    PropList = [ {apps, Dirs}
-               , {dest, aname(Conf#conf.destination)}
-               , {base, Conf#conf.base}
-               , {ga,   Conf#conf.ga} ],
-    erldocs_core:dispatch(PropList);
+    [ {apps, Dirs}
+    , {dest, aname(Conf#conf.destination)}
+    , {base, Conf#conf.base}
+    , {ga,   Conf#conf.ga}
+    ];
 
 parse (["-o", Dest | Rest], Conf) ->
     parse(Rest, Conf#conf{destination = Dest});

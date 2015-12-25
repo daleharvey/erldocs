@@ -188,7 +188,7 @@ gen_type_specs (IncludePaths, SpecsDest, ErlFile) ->
     ?log("Generating Type Specs - ~p", [ErlFile]),
     Args = ["-o"++SpecsDest] ++ ["-I"++Inc || Inc <- IncludePaths] ++ [ErlFile],
     try SpecsGenModule:main(Args)
-    catch _:_SpecsGenError -> ok
+    catch _:_SpecsGenError -> false
     end.
 
 %% @doc
