@@ -1,13 +1,26 @@
-.PHONY: deps
+all: escript | erl.mk
 
-all:
-	./rebar compile escriptize
+erl.mk:
+	curl -fsSLo $@ 'https://raw.github.com/fenollp/erl-mk/master/erl.mk' || rm $@
 
-deps:
-	./rebar get-deps
+dep_erlydtl = https://github.com/erlydtl/erlydtl 0.11.1
 
-clean:
-	@./rebar clean
+ERLCFLAGS += +debug_info
 
-distclean: clean
-	@rm -rf erldocs deps
+-include erl.mk
+# Your targets after this line.
+.PHONY: clean distclean test
+
+clean: clean-ebin
+
+distclean: clean clean-escript clean-deps
+	$(if $(wildcard erl.mk), rm erl.mk)
+
+debug: debug-app
+
+test: eunit.erldocs_core
+	./test/check.sh
+#	./test/test.sh /tmp/erldocs.git
+
+dialyze: app
+	dialyzer --src src/ --plt ~/.dialyzer_plt --no_native  -Werror_handling -Wrace_conditions -Wunmatched_returns -Wunderspecs
