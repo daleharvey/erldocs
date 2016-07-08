@@ -1,3 +1,5 @@
+**NOTE: the actively used & supported version of erldocs is at https://github.com/erldocs/erldocs**
+
 Erldocs
 =======
 
